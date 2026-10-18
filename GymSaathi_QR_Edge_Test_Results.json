@@ -27,7 +27,7 @@
     {
       "name": "Conversational QR assistant supports a quarterly-only gym without monthly pricing",
       "pass": true,
-      "detail": "HTTP 200; next=name; say=नमस्ते! GymSaathi registration assistant में आपका स्वागत है। अपना पूरा नाम बताइए, जैसा जिम के रिकॉर्ड में होना चाहिए।"
+      "detail": "HTTP 200; next=name; say=नमस्ते! Gym Quarterly में registration और check-in के लिए आपका स्वागत है। आपका पूरा नाम क्या है? अगर आप पहले से इस जिम के सदस्य हैं, तो वही नाम बताइए जो आपने पहले दिया था। नए सदस्य हैं तो अपना नाम बताइए—रजिस्ट्रेशन के बाद यही नाम जिम के रिकॉर्ड में सेव होगा।"
     },
     {
       "name": "Same phone can belong to separate gyms without cross-contamination",

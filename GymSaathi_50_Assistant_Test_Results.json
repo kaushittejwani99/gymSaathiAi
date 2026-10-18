@@ -480,22 +480,22 @@
     {
       "n": 44,
       "question": "Aaj kiski attendance lagi?",
-      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
+      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:54 am — ✓ Present",
       "pass": true,
       "reason": "mode=local, chars=72",
       "raw": {
-        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
+        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:54 am — ✓ Present",
         "mode": "local"
       }
     },
     {
       "n": 45,
       "question": "Kis member ne aaj attendance lagayi?",
-      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
+      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:54 am — ✓ Present",
       "pass": true,
       "reason": "mode=local, chars=72",
       "raw": {
-        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
+        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:54 am — ✓ Present",
         "mode": "local"
       }
     },
@@ -509,7 +509,7 @@
         "answer": "Aman Singh (9876543211) के ₹500 कैश में जमा करूँ?",
         "pending": {
           "do": "pay",
-          "id": "31d74b550f7022ab",
+          "id": "00fe8b4d078d55b0",
           "body": {
             "amount": 500,
             "mode": "Cash"
@@ -528,7 +528,7 @@
         "answer": "Aman Singh (9876543211) की मेंबरशिप 3 महीने के लिए रिन्यू करूँ?\n- 18 Nov 2026 से 17 Feb 2027\n- फीस: ₹1,300\n- पिछला बाकी: ₹500\n- अभी जमा: ₹0",
         "pending": {
           "do": "renew",
-          "id": "31d74b550f7022ab",
+          "id": "00fe8b4d078d55b0",
           "body": {
             "months": 3,
             "paid": 0,
@@ -548,7 +548,7 @@
       "raw": {
         "answer": "Aman Singh के लिए बाकी फीस का रिमाइंडर तैयार है। नीचे का बटन दबाइए, व्हाट्सऐप खुल जाएगा।",
         "remind": {
-          "id": "31d74b550f7022ab",
+          "id": "00fe8b4d078d55b0",
           "type": "fees"
         },
         "mode": "local"

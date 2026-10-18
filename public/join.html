@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>GymSaathi — AI member registration</title>
+  <title id="pageTitle">GymSaathi — Registration & Attendance</title>
   <link rel="stylesheet" href="/join.css">
 </head>
 <body>
@@ -18,7 +18,8 @@
 
     <section id="assistantPanel" class="panel assistant-panel" hidden>
       <h2>AI Registration Assistant</h2>
-      <p class="muted">Namaste! Main aapse ek-ek karke registration ki details poochunga. Aap type kar sakte hain ya mic se bol sakte hain.</p>
+      <p id="assistantGymContext" class="gym-context">Registration for this gym</p>
+      <p id="assistantIntro" class="muted">Namaste! Is gym mein naya registration karne ke liye apna naam batayein. Agar aap pehle se member hain, to pehle diya hua naam batayein. Naye member ka naam registration ke baad record mein save hoga.</p>
       <div id="chatLog" class="chat-log" role="log" aria-live="polite" aria-relevant="additions text"></div>
       <div class="voice-tools">
         <button class="btn secondary voice-btn" id="micButton" type="button">🎙 Speak</button>

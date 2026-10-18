@@ -4,6 +4,8 @@ GymSaathi QR AI Registration Assistant — Patch-only package
 WHAT THIS CHANGES
 -----------------
 - On the first QR scan without a remembered device session, the public page opens a chat-style AI registration assistant when at least one plan price is configured.
+- The assistant visibly names the target gym in the QR page, assistant context line and browser title, so members can confirm which gym they are registering with. The assistant speaks the gym name in its opening message where available.
+- The first name question explicitly explains that new members do not need to already exist in the gym records; the name is saved only after registration. Existing members are asked to use the name they gave previously so the same record can be matched.
 - The assistant asks name and mobile first. If these match an existing member in that gym, it marks attendance (only if the membership is active), remembers the device, and does not create a duplicate.
 - If the number is new, the assistant gathers the registration details one at a time, supports typed replies and speech input in compatible browsers, shows a review summary, then saves the member with ₹0 paid and marks first-day attendance if active.
 - Subsequent scans in the same browser use the secure HttpOnly gym-scoped cookie and do not ask for name/mobile again. Same-day duplicate attendance is prevented.
@@ -47,10 +49,10 @@ INSTALL SAFELY
 
 LOCAL QA
 --------
-- QR/core integration: 53/53 passed.
+- QR/core integration: 54/54 passed.
 - QR edge cases: 24/24 passed.
 - 50 assistant response assertions: 50/50 passed with local fallback (no Gemini key).
-- Total: 127/127 isolated automated assertions passed.
+- Total: 128/128 isolated automated assertions passed.
 - Live Render, production MongoDB, real Gemini API, WhatsApp sending and a physical phone were not tested. A headless Chromium smoke attempt was blocked by the local environment's administrator policy, so no real visual browser-interaction test is claimed.
 
 SECURITY LIMITATION

@@ -322,7 +322,11 @@
     gym = result.gym;
     plans = Array.isArray(result.plans) ? result.plans : [];
     extras = result.extras || extras;
-    $('#gymName').textContent = gym.name || 'GymSaathi Registration Assistant';
+    const gymName = String(gym.name || '').trim() || 'GymSaathi';
+    $('#gymName').textContent = gymName;
+    document.title = `${gymName} — Registration & Attendance | GymSaathi`;
+    $('#assistantGymContext').textContent = `Registration / check-in at ${gymName}`;
+    $('#assistantIntro').textContent = `Namaste! Aap ${gymName} mein registration ya check-in kar rahe hain. Agar aap naye member hain, to naam abhi batayein—registration complete hone ke baad hi yeh gym ke record mein save hoga. Agar aap pehle se member hain, to wahi naam batayein jo aapne membership lete waqt diya tha. Main ek-ek karke details poochunga; aap type kar sakte hain ya mic se bol sakte hain.`;
     const details = [gym.timings, gym.amenities].filter(Boolean).join(' · ');
     $('#gymDetails').textContent = details || 'Member registration and check-in';
     if (result.status === 'present' || result.status === 'already') {

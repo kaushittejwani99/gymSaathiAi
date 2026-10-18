@@ -1,0 +1,30 @@
+GymSaathi — QR AI Registration Assistant: Local E2E Review
+=========================================================
+
+Latest change reviewed
+----------------------
+- The public QR page now displays the gym's own name in the page header, an explicit “Registration / check-in at <gym name>” context line, and the browser tab title.
+- The assistant intro tells new visitors their name does not need to already exist: it is saved to the gym record after registration. Existing members are told to give the name they used previously so the existing record can be matched.
+- The spoken first question includes the gym name in its welcome and no longer says a new member's name must already be in the gym records.
+- Existing-member detection still checks name + mobile after these first identity questions; a match marks attendance for the existing record and does not duplicate it. Later same-browser scans use the saved secure cookie.
+
+Local automated tests (isolated temporary file-backed database)
+----------------------------------------------------------------
+- `node --check server.js`: PASS
+- `node --check lib/ai.js`: PASS
+- `node --check public/join.js`: PASS
+- `node --check tests/run_e2e.cjs`: PASS
+- `tests/run_e2e.cjs`: 54/54 passed. Includes assertions that the gym name appears in the public assistant response, the first question distinguishes a new registration from an existing member, the UI has a dedicated gym context, and the browser title is dynamically set from the gym name; plus registration, identity match, attendance, cookie and backup/restore flows.
+- `tests/test_qr_edges.cjs`: 24/24 passed. Includes per-gym token isolation, quarterly-only plan registration, invalid inputs, date-boundary activity, same-day/concurrent duplicate prevention, and attendance UI checks.
+- `tests/test_50_assistant.cjs`: 50/50 prompt-response assertions passed using local fallback with Gemini API key removed.
+- Total: 128/128 isolated assertions passed.
+
+Important limits
+----------------
+- These are local source/API integration tests. They do not prove a live Render deployment, real MongoDB Atlas behavior, actual Gemini provider responses, WhatsApp delivery, or scanning the QR using a physical phone.
+- No successful real browser visual-interaction test is claimed. The earlier Chromium smoke test was blocked by the execution environment's browser policy.
+- Before production, deploy to staging, test the first registration and repeat scan with a real phone, and verify the member record plus dashboard attendance. Back up production data first and do not commit `.env`.
+
+Security note
+-------------
+First-time existing-member detection currently relies on a matching name + mobile number, not OTP verification. For stronger proof of phone ownership, add SMS/WhatsApp OTP or a staff-issued activation code.
