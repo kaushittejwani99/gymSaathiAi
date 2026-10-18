@@ -516,7 +516,7 @@ function publicGymDetails(account) {
 }
 
 async function publicJoinApi(req, res, url) {
-  const match = /^\/api\/public\/join\/([a-f0-9]{48})(?:\/(lookup|register|logout))?$/.exec(url.pathname);
+  const match = /^\/api\/public\/join\/([a-f0-9]{48})(?:\/(lookup|register|logout|assistant-turn))?$/.exec(url.pathname);
   if (!match) return false;
   const token = match[1], action = match[2] || '';
   const account = await publicGymForToken(token);
@@ -532,19 +532,41 @@ async function publicJoinApi(req, res, url) {
     }
     return json(res, 200, { ...pub, status: 'first_visit', recognized: false }, headers), true;
   }
-  if (req.method !== 'POST' || !['lookup', 'register', 'logout'].includes(action)) fail(405, 'This action is not available.');
+  if (req.method !== 'POST' || !['lookup', 'register', 'logout', 'assistant-turn'].includes(action)) fail(405, 'This action is not available.');
   if (!/^application\/json\b/i.test(req.headers['content-type'] || '')) fail(415, 'Send the request as application/json.');
 
   // The only public writes are identity verification, self-registration and clearing this device's own QR session.
   const client = clientOf(req);
-  const limit = bucket(`public qr ${action} ${token} ${client}`, action === 'register' ? 15 * 60e3 : 60e3);
-  if (limit.n++ >= (action === 'register' ? 8 : 120)) fail(429, 'Too many attempts. Please wait a little and try again.');
+  const limitWindow = action === 'register' ? 15 * 60e3 : 60e3;
+  const limitMax = action === 'register' ? 8 : action === 'assistant-turn' ? 45 : 120;
+  const limit = bucket(`public qr ${action} ${token} ${client}`, limitWindow);
+  if (limit.n++ >= limitMax) fail(429, 'Too many attempts. Please wait a little and try again.');
   const body = await readJsonBody(req);
 
   if (action === 'logout') {
     const secret = memberQrCookieOf(req, token);
     if (secret) await db.remove('member_qr_sessions', { _id: sha256(secret), gymId: account._id });
     return json(res, 200, { status: 'first_visit', message: 'This device is ready for another member.' }, { 'Set-Cookie': memberQrCookieHeader(req, token, '') }), true;
+  }
+
+  if (action === 'assistant-turn') {
+    // Public QR registration only uses the conversational registration turn. Never pass the gym's member list
+    // into an unauthenticated AI request: it could expose other members' private details or copy their records.
+    const result = await ai.turn({
+      gym: account.details,
+      form: body.form && typeof body.form === 'object' && !Array.isArray(body.form) ? body.form : {},
+      asked: G.str(body.asked, 20),
+      said: G.str(body.said, 500),
+      tries: Math.max(0, Math.min(5, Number(body.tries) || 0)),
+      members: [],
+      spoken: body.spoken === true,
+      publicMember: true,
+    });
+    return json(res, 200, {
+      form: result.form || {}, next: result.next || null, tries: result.tries || 0,
+      say: G.str(result.say, 1200), done: result.done === true, fee: Number(result.fee) || 0,
+      setup: result.setup === true, cancel: result.cancel === true, echo: result.echo === true,
+    }), true;
   }
 
   if (action === 'lookup') {
@@ -591,7 +613,9 @@ async function publicJoinApi(req, res, url) {
       name, phone,
       gender: ['Male', 'Female'].includes(body.gender) ? body.gender : '',
       age: body.age === '' || body.age == null ? '' : Number(body.age),
-      goal: G.str(body.goal, 100), batch: ['Morning', 'Evening'].includes(body.batch) ? body.batch : '',
+      weight: body.weight === '' || body.weight == null ? '' : Number(body.weight),
+      height: G.str(body.height, 30), goal: G.str(body.goal, 100), health: G.str(body.health, 150),
+      batch: ['Morning', 'Evening'].includes(body.batch) ? body.batch : '', notes: G.str(body.notes, 500),
       months, paid: 0, pt, diet,
     };
     const who = await details(payload, account);

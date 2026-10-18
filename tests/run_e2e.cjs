@@ -51,11 +51,47 @@ async function main(){
    dataR=await req('/api/data',{cookie:gymCookie});
    ok('Settings persist across GET /api/data',dataR.json.gym?.staff?.[0]?.name==='Rohit Sharma' && dataR.json.gym?.price1===500,`staff=${dataR.json.gym?.staff?.length||0}`);
    const page=await req(`/join/${token}`);
-   ok('public QR page loads and is limited join page',page.res.status===200 && page.text.includes('First-time QR registration') && !page.text.includes('href="#/dashboard"'),`status=${page.res.status}`);
+   ok('public QR page loads and is limited join page',page.res.status===200 && page.text.includes('AI Registration Assistant') && !page.text.includes('href="#/dashboard"'),`status=${page.res.status}`);
    const joinJs=await req('/join.js');
-   ok('first scan UI is wired to open registration before manual lookup',joinJs.res.status===200 && joinJs.text.includes("visible('#registerPanel')") && joinJs.text.includes("result.canRegister && plans.length"),`status=${joinJs.res.status}`);
+   ok('first scan UI is wired to open registration before manual lookup',joinJs.res.status===200 && joinJs.text.includes("/assistant-turn") && joinJs.text.includes('startAssistant') && joinJs.text.includes("result.canRegister && plans.length"),`status=${joinJs.res.status}`);
    const first=await req(`/api/public/join/${token}`);
    ok('first scan with no saved cookie returns first_visit so UI can show registration',first.res.status===200 && first.json.status==='first_visit' && first.json.canRegister===true,`status=${first.res.status} response=${JSON.stringify(first.json)}`);
+   const initialTurn=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:{},asked:'',said:'',tries:0}});
+   ok('QR registration assistant endpoint starts the conversation with a name prompt',initialTurn.res.status===200 && initialTurn.json.next==='name' && /नाम/.test(initialTurn.json.say||''),`status=${initialTurn.res.status}; next=${initialTurn.json.next}; say=${initialTurn.json.say}`);
+   const naturalHindiName=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:{},asked:'name',said:'मेरा नाम राहुल शर्मा है',tries:0}});
+   ok('QR AI handles a natural Hindi introduction without requiring a Gemini key',naturalHindiName.res.status===200 && naturalHindiName.json.form?.name==='राहुल शर्मा' && naturalHindiName.json.next==='phone',`name=${naturalHindiName.json.form?.name}; next=${naturalHindiName.json.next}`);
+   // Public QR AI assistant: ask one question at a time, resolve existing members after name + phone,
+   // then collect a new visitor's registration, review it, save it and verify the first/repeat attendance flow.
+   let qrState=initialTurn.json;
+   let qrTurn=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:qrState.form,asked:qrState.next,said:'QR AI New Person',tries:qrState.tries||0}});
+   qrState=qrTurn.json;
+   ok('QR AI accepts a new member name and asks for mobile',qrTurn.res.status===200 && qrState.form?.name==='QR AI New Person' && qrState.next==='phone',`status=${qrTurn.res.status}; next=${qrState.next}; name=${qrState.form?.name}`);
+   qrTurn=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:qrState.form,asked:qrState.next,said:'9876543290',tries:qrState.tries||0}});
+   qrState=qrTurn.json;
+   const qrIdentity=await req(`/api/public/join/${token}/lookup`,{method:'POST',body:{name:qrState.form.name,phone:qrState.form.phone}});
+   ok('QR AI collects mobile and safely checks whether this gym already has that member',qrTurn.res.status===200 && qrState.form?.phone==='9876543290' && qrState.next==='gender' && qrIdentity.json.status==='new' && !('members' in qrState),`next=${qrState.next}; identity=${qrIdentity.json.status}; response keys=${Object.keys(qrState).join(',')}`);
+   const qrAnswers={gender:'male',age:'24',weight:'72',height:'5 ft 8 in',goal:'weight loss',health:'skip',batch:'morning',pt:'no',diet:'no',months:'1 month'};
+   let qrSteps=0;
+   while(qrState.next && qrState.next!=='paid' && qrSteps<20){
+     const answer=qrAnswers[qrState.next] ?? 'skip';
+     qrTurn=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:qrState.form,asked:qrState.next,said:answer,tries:qrState.tries||0}});
+     if(qrTurn.res.status!==200) break;
+     qrState=qrTurn.json; qrSteps++;
+   }
+   if(qrState.next==='paid'){
+     qrTurn=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:{...qrState.form,paid:0},asked:'paid',said:'0',tries:0}});
+     qrState=qrTurn.json;
+   }
+   ok('QR AI conversation reaches confirmation, computes the right fee and never asks to record payment',qrState.done===true && qrState.next===null && qrState.form.name==='QR AI New Person' && qrState.form.phone==='9876543290' && qrState.form.gender==='Male' && qrState.form.age===24 && qrState.form.weight===72 && qrState.form.height==='5 ft 8 in' && qrState.form.goal==='Weight loss' && qrState.form.health==='' && qrState.form.batch==='Morning' && qrState.form.months===1 && qrState.form.paid===0 && qrState.fee===500,`done=${qrState.done}; next=${qrState.next}; months=${qrState.form.months}; paid=${qrState.form.paid}; fee=${qrState.fee}; steps=${qrSteps}`);
+   const qrAiSave=await req(`/api/public/join/${token}/register`,{method:'POST',body:{name:qrState.form.name,phone:qrState.form.phone,months:qrState.form.months,gender:qrState.form.gender||'',age:qrState.form.age??'',weight:qrState.form.weight??'',height:qrState.form.height||'',goal:qrState.form.goal||'',health:qrState.form.health||'',batch:qrState.form.batch||'',pt:qrState.form.pt===true,diet:qrState.form.diet===true,accept:true}});
+   const qrAiCookie=parseCookie(qrAiSave.res,`gs_member_${token}`);
+   ok('QR AI-confirmed registration creates member, unpaid membership, saved-device cookie and first attendance',qrAiSave.res.status===200 && qrAiSave.json.status==='registered' && qrAiSave.json.attendanceMarked===true && qrAiSave.json.due===500 && !!qrAiCookie,`status=${qrAiSave.res.status}; result=${JSON.stringify(qrAiSave.json)}; cookie=${!!qrAiCookie}`);
+   const qrAiRepeat=await req(`/api/public/join/${token}`,{cookie:qrAiCookie});
+   const qrAiDashboard=await req('/api/data',{cookie:gymCookie});
+   const qrSavedMember=qrAiDashboard.json.members.find(m=>m.phone==='9876543290');
+   ok('AI-registered member is auto-recognized next time and shows once in member + attendance lists',qrAiRepeat.json.status==='already' && qrAiRepeat.json.recognized===true && qrAiDashboard.json.members.filter(m=>m.phone==='9876543290').length===1 && qrAiDashboard.json.attendance.filter(a=>a.phone==='9876543290').length===1,`repeat=${qrAiRepeat.json.status}; members=${qrAiDashboard.json.members.filter(m=>m.phone==='9876543290').length}; attendance=${qrAiDashboard.json.attendance.filter(a=>a.phone==='9876543290').length}`);
+   ok('QR AI optional details are persisted to the real member record',qrSavedMember?.gender==='Male' && qrSavedMember?.age===24 && qrSavedMember?.weight===72 && qrSavedMember?.height==='5 ft 8 in' && qrSavedMember?.goal==='Weight loss' && qrSavedMember?.batch==='Morning' && qrSavedMember?.paid===0,`gender=${qrSavedMember?.gender}; age=${qrSavedMember?.age}; weight=${qrSavedMember?.weight}; height=${qrSavedMember?.height}; goal=${qrSavedMember?.goal}; batch=${qrSavedMember?.batch}; paid=${qrSavedMember?.paid}`);
+
    const createdMember=await req('/api/members',{method:'POST',cookie:gymCookie,body:{name:'Existing Active',phone:'9876543211',months:1,paid:0,start:indiaDay()}});
    ok('normal member registration saves via backend',createdMember.res.status===200 && createdMember.json.name==='Existing Active',`status=${createdMember.res.status}`);
    const lookup=await req(`/api/public/join/${token}/lookup`,{method:'POST',body:{name:'Existing Active',phone:'9876543211'}});
@@ -66,6 +102,14 @@ async function main(){
    let after=await req('/api/data',{cookie:gymCookie});
    const nAttendance=(after.json.attendance||[]).filter(x=>x.id===createdMember.json.id).length;
    ok('dashboard data reflects QR attendance exactly once',nAttendance===1,`member rows=${after.json.members?.length}; attendance matches=${nAttendance}`);
+   const memberForAssistant=await req('/api/members',{method:'POST',cookie:gymCookie,body:{name:'Existing AI QR Member',phone:'9876543232',months:1,paid:0,start:indiaDay()}});
+   const existingAIStart=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:{},asked:'',said:'',tries:0}});
+   const existingAIName=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:existingAIStart.json.form,asked:existingAIStart.json.next,said:'Existing AI QR Member',tries:0}});
+   const existingAIPhone=await req(`/api/public/join/${token}/assistant-turn`,{method:'POST',body:{form:existingAIName.json.form,asked:existingAIName.json.next,said:'9876543232',tries:0}});
+   const existingAICheckin=await req(`/api/public/join/${token}/lookup`,{method:'POST',body:{name:existingAIPhone.json.form.name,phone:existingAIPhone.json.form.phone}});
+   const existingAICookie=parseCookie(existingAICheckin.res,`gs_member_${token}`);
+   const afterExistingAI=await req('/api/data',{cookie:gymCookie});
+   ok('QR AI recognizes an existing registered member after name + phone and skips duplicate registration',memberForAssistant.res.status===200 && existingAIPhone.json.next==='gender' && existingAICheckin.json.status==='present' && !!existingAICookie && afterExistingAI.json.members.filter(m=>m.phone==='9876543232').length===1,`checkin=${existingAICheckin.json.status}; member records=${afterExistingAI.json.members.filter(m=>m.phone==='9876543232').length}`);
 
    // A member whose record already exists but has no QR cookie opens the registration form first.
    // Submitting the same registered full name + mobile must recognize that record, not add a duplicate.

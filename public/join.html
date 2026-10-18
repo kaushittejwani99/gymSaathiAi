@@ -1,24 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>Gym member check-in</title>
+  <title>GymSaathi — AI member registration</title>
   <link rel="stylesheet" href="/join.css">
 </head>
 <body>
   <main class="join-shell">
     <header class="join-head">
       <div class="join-mark" aria-hidden="true">G</div>
-      <div><p class="eyebrow">GYMSAATHI</p><h1 id="gymName">Gym member check-in</h1><p id="gymDetails" class="muted">Loading this gym…</p></div>
+      <div><p class="eyebrow">GYMSAATHI</p><h1 id="gymName">GymSaathi Registration Assistant</h1><p id="gymDetails" class="muted">Loading this gym…</p></div>
     </header>
 
     <section id="notice" class="notice" role="status" aria-live="polite" hidden></section>
 
+    <section id="assistantPanel" class="panel assistant-panel" hidden>
+      <h2>AI Registration Assistant</h2>
+      <p class="muted">Namaste! Main aapse ek-ek karke registration ki details poochunga. Aap type kar sakte hain ya mic se bol sakte hain.</p>
+      <div id="chatLog" class="chat-log" role="log" aria-live="polite" aria-relevant="additions text"></div>
+      <div class="voice-tools">
+        <button class="btn secondary voice-btn" id="micButton" type="button">🎙 Speak</button>
+        <span id="voiceStatus" class="muted voice-status">Type your reply below or tap Speak.</span>
+      </div>
+      <form id="replyForm" class="reply-form" novalidate>
+        <label class="sr-only" for="replyInput">Your answer</label>
+        <input id="replyInput" name="reply" autocomplete="off" maxlength="500" placeholder="Apna jawab yahan likhein…" required>
+        <button class="btn primary send-btn" id="sendButton" type="submit">Send</button>
+      </form>
+      <div class="assistant-actions">
+        <button class="btn secondary" id="skipButton" type="button" hidden>Skip this question</button>
+        <button class="btn secondary" id="restartButton" type="button" hidden>Start again</button>
+        <button class="btn secondary" id="manualVerifyButton" type="button">Already a member? Check in</button>
+      </div>
+      <section id="reviewPanel" class="review-card" hidden>
+        <h3>Review your details</h3>
+        <p class="muted">Please check the details before submitting. Payment is not collected or recorded on this page.</p>
+        <div id="reviewSummary" class="review-summary"></div>
+        <div class="review-buttons">
+          <button class="btn primary" id="confirmButton" type="button">Confirm & register</button>
+          <button class="btn secondary" id="editButton" type="button">Start again to correct</button>
+        </div>
+      </section>
+      <p class="fine-print">Your details go to this gym only. A valid, active membership is required for attendance. Do not enter another person’s information.</p>
+    </section>
+
     <section id="lookupPanel" class="panel" hidden>
-      <h2>Check in or join this gym</h2>
-      <p class="muted">Already a member? Enter the same full name and mobile number saved by the gym. New here? Register once. This device will be remembered for future QR scans.</p>
+      <h2>Existing member check-in</h2>
+      <p class="muted">Enter the full name and mobile number registered with this gym. After verification, this device will be remembered for future scans.</p>
       <form id="lookupForm" novalidate>
         <label>Full name
           <input name="name" autocomplete="name" maxlength="80" required placeholder="As registered with the gym">
@@ -26,48 +56,10 @@
         <label>Mobile number
           <input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="15" required placeholder="10-digit mobile number">
         </label>
-        <button class="btn primary" type="submit" id="lookupButton">Continue</button>
+        <button class="btn primary" type="submit" id="lookupButton">Verify & check in</button>
+        <button class="btn secondary" type="button" id="backToAssistantButton">Back to registration assistant</button>
       </form>
-      <p class="fine-print">This page is only for this gym's check-in and self-registration. It does not provide access to member lists, fees, or gym management.</p>
-    </section>
-
-    <section id="registerPanel" class="panel" hidden>
-      <h2>First-time QR registration</h2>
-      <p class="muted">First scan on this device? Fill in the form. If your mobile is already registered, enter the same registered name and we will check in that existing member instead of creating a duplicate. Future scans on this browser will mark attendance automatically. This form does not record a payment.</p>
-      <form id="registerForm" novalidate>
-        <label>Full name
-          <input name="name" autocomplete="name" maxlength="80" required>
-        </label>
-        <label>Mobile number
-          <input name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="15" required placeholder="10-digit mobile number">
-        </label>
-        <div class="two-col">
-          <label>Gender (optional)
-            <select name="gender"><option value="">Prefer not to say</option><option value="Male">Male</option><option value="Female">Female</option></select>
-          </label>
-          <label>Age (optional)
-            <input name="age" type="number" min="5" max="100" step="1" inputmode="numeric" placeholder="Age">
-          </label>
-        </div>
-        <label>Membership plan
-          <select name="months" id="planSelect" required></select>
-        </label>
-        <div id="extras" class="extras" hidden>
-          <label id="ptWrap" class="check" hidden><input type="checkbox" name="pt"> <span id="ptLabel">Personal trainer</span></label>
-          <label id="dietWrap" class="check" hidden><input type="checkbox" name="diet"> <span id="dietLabel">Diet plan</span></label>
-        </div>
-        <div class="two-col">
-          <label>Preferred batch (optional)
-            <select name="batch"><option value="">No preference</option><option value="Morning">Morning</option><option value="Evening">Evening</option></select>
-          </label>
-          <label>Fitness goal (optional)
-            <select name="goal"><option value="">Select a goal</option><option value="Fitness">Fitness</option><option value="Weight loss">Weight loss</option><option value="Muscle gain">Muscle gain</option></select>
-          </label>
-        </div>
-        <label class="consent"><input type="checkbox" name="accept" required> <span>I confirm these details are mine and are correct.</span></label>
-        <button class="btn primary" type="submit" id="registerButton">Register / check in</button>
-        <button class="btn secondary" type="button" id="existingMemberButton">Already a member? Verify check-in</button>
-      </form>
+      <p class="fine-print">This page is only for check-in and registration. It does not provide access to the member list, payments, or gym management.</p>
     </section>
 
     <section id="successPanel" class="panel success-panel" hidden>

@@ -1,7 +1,7 @@
 {
   "environment": "isolated file-backed local test server; no live services",
-  "total": 23,
-  "passed": 23,
+  "total": 24,
+  "passed": 24,
   "failed": 0,
   "checks": [
     {
@@ -23,6 +23,11 @@
       "name": "Quarterly-only plan still enables QR registration",
       "pass": true,
       "detail": "[{\"months\":3,\"label\":\"3 महीने\",\"fee\":1200}]"
+    },
+    {
+      "name": "Conversational QR assistant supports a quarterly-only gym without monthly pricing",
+      "pass": true,
+      "detail": "HTTP 200; next=name; say=नमस्ते! GymSaathi registration assistant में आपका स्वागत है। अपना पूरा नाम बताइए, जैसा जिम के रिकॉर्ड में होना चाहिए।"
     },
     {
       "name": "Same phone can belong to separate gyms without cross-contamination",

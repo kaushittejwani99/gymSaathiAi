@@ -4,9 +4,9 @@ GymSaathi — QR First-Scan Registration + Automatic Attendance
 EXPECTED FLOW
 -------------
 1. A QR link is unique to each gym.
-2. When a browser/device has no valid saved QR session, scanning the QR opens the registration form directly (when the gym has at least one priced membership plan).
-3. A genuinely new visitor enters their details and chooses a membership plan. The server creates the member and membership with ₹0 paid, issues a secure gym-scoped HttpOnly cookie, and records that day's attendance if the membership is active that day.
-4. If the visitor is already recorded in this gym, they can enter the same registered full name and mobile in that same first-scan form. The server recognizes that existing record and checks it in without creating a duplicate member. An incorrect name for an already-used number is rejected; the visitor can choose “Already a member? Verify check-in” to use the dedicated existing-member verification form.
+2. When a browser/device has no valid saved QR session, scanning the QR opens a conversational AI registration assistant directly (when the gym has at least one priced membership plan). The assistant asks one question at a time in chat and supports microphone input in compatible browsers.
+3. A genuinely new visitor answers the assistant’s questions and chooses a membership plan, then reviews the details before confirming. The server creates the member and membership with ₹0 paid, issues a secure gym-scoped HttpOnly cookie, and records that day's attendance if the membership is active that day.
+4. If the visitor is already recorded in this gym, the assistant asks for their registered full name and mobile first; if they match, it checks in that existing record immediately without walking through the rest of registration. The server recognizes that existing record and checks it in without creating a duplicate member. An incorrect name for an already-used number is rejected; the visitor can choose “Already a member? Check in” to use the dedicated existing-member verification form.
 5. On later scans in the same browser, the cookie identifies the member automatically. No name or mobile is requested again. Active membership is rechecked every time. If the current India date is within an active membership period and the member has not yet been marked for that date, attendance is inserted; repeat scans the same day return “Already checked in” and do not make another row.
 6. Expired, inactive, and future-start memberships are not marked present. The attendance dashboard lists each check-in with ✓ Present, member name, mobile and check-in time.
 
@@ -14,7 +14,7 @@ SESSION AND PRIVACY DETAILS
 --------------------------
 - The browser receives a random HttpOnly, SameSite=Lax cookie scoped to the current gym's public QR API path. JavaScript cannot read this cookie.
 - The server stores only a SHA-256 hash of the random secret in `member_qr_sessions`, tied to the gym and member IDs. It does not trust an ID provided by the browser.
-- Clearing cookies, using private browsing, a different browser, or another device makes the registration/first-step form show again. Same-browser cookie behavior depends on opening the QR link in that same browser.
+- Clearing cookies, using private browsing, a different browser, or another device starts the assistant’s name/mobile verification again. Same-browser cookie behavior depends on opening the QR link in that same browser.
 - A phone number already belonging to a member in another gym does not identify the member in this gym; gym IDs are kept separate.
 - First-time existing-member matching uses registered name + mobile, not OTP. This is safer against accidental duplicates but does not prove phone ownership. Add SMS/WhatsApp OTP or staff-issued activation codes for stronger identity verification.
 - The public QR page does not expose management APIs, member lists or payments.
@@ -23,9 +23,9 @@ SESSION AND PRIVACY DETAILS
 
 FILES CHANGED FOR THIS FLOW
 ---------------------------
-- `server.js`: recognize existing same-gym members submitted from first-scan form without duplicate creation; issue remembered-device cookie and mark attendance.
-- `public/join.html`: editable mobile number, revised first-scan registration copy, existing-member alternate action.
-- `public/join.js`: first visit opens registration directly when plans are available; successful existing-member match shows check-in result; subsequent scans automatically show attendance result.
+- `server.js`: expose a rate-limited public assistant-turn route and recognize existing same-gym members after name + mobile without duplicate creation; issue remembered-device cookie and mark attendance.
+- `public/join.html` / `public/join.css`: chat-style first-scan assistant, mic/text reply controls, optional skip controls, review card and success/check-in views.
+- `public/join.js`: first visit opens the conversational AI registration assistant when plans are available; the browser uses text chat or supported speech-to-text, speaks assistant prompts when available, checks for an existing member after name + mobile, shows a review summary before saving a new member, and then relies on the secure cookie for future automatic check-ins.
 - `public/app.js`: Settings copy explains first scan and automatic repeat scans; dashboard attendance table keeps visible ✓ Present per member.
 - `lib/ai.js`: QR assistant guidance follows the updated flow.
 - All other included server/library/frontend files are from the reviewed GymSaathi project package and are included so paths remain consistent.

@@ -28,6 +28,8 @@ async function main(){
   check('QR page content resolves to the correct gym',pubA.json.gym.name==='Gym Alpha'&&pubB.json.gym.name==='Gym Beta');
   const pubC = (await req(`/api/public/join/${C.token}`)).json;
   check('Quarterly-only plan still enables QR registration',pubC.canRegister===true && pubC.plans.some(p=>p.months===3&&p.fee===1200),JSON.stringify(pubC.plans));
+  const quarterlyAssistant=await req(`/api/public/join/${C.token}/assistant-turn`,{method:'POST',body:{form:{},asked:'',said:'',tries:0}});
+  check('Conversational QR assistant supports a quarterly-only gym without monthly pricing',quarterlyAssistant.res.status===200&&quarterlyAssistant.json.next==='name'&&/नाम/.test(quarterlyAssistant.json.say||''),`HTTP ${quarterlyAssistant.res.status}; next=${quarterlyAssistant.json.next}; say=${quarterlyAssistant.json.say}`);
   const today=indiaDay();
   const createMember=async(gym,name,phone,start=today,months=1)=>req('/api/members',{method:'POST',cookie:gym.cookie,body:{name,phone,months,paid:0,start}});
   const mA=await createMember(A,'Shared Phone Alpha','9876543211');const mB=await createMember(B,'Shared Phone Beta','9876543211');

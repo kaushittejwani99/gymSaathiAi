@@ -106,11 +106,11 @@
     {
       "n": 10,
       "question": "अगले 7 दिनों में किसकी membership खत्म हो रही है?",
-      "answer": "अगले 7 दिनों में membership ending report: 1 मेंबर.\n- Soon Ending: 21 Oct 2026 (इस तारीख को खत्म होगी)",
+      "answer": "अगले 7 दिनों में membership ending report: 1 मेंबर.\n- Soon Ending: 22 Oct 2026 (इस तारीख को खत्म होगी)",
       "pass": true,
       "reason": "mode=local, chars=102",
       "raw": {
-        "answer": "अगले 7 दिनों में membership ending report: 1 मेंबर.\n- Soon Ending: 21 Oct 2026 (इस तारीख को खत्म होगी)",
+        "answer": "अगले 7 दिनों में membership ending report: 1 मेंबर.\n- Soon Ending: 22 Oct 2026 (इस तारीख को खत्म होगी)",
         "mode": "local"
       }
     },
@@ -304,11 +304,11 @@
     {
       "n": 28,
       "question": "QR code scan karne par attendance kaise mark hoti hai?",
-      "answer": "GymSaathi का Member QR code attendance और नए member registration—दोनों के लिए है:\n- QR link Settings में \"Member QR code\" section से खोलें या print करें। हर gym का QR link अलग होता है।\n- जिस device पर पहले से QR session नहीं है, पहली scan पर registration form खुलेगा। नया member form भरेगा; पहले से दर्ज mobile + वही registered full name देने पर existing record पहचाना जाएगा—duplicate member नहीं बनेगा।\n- सफल registration/verification के बाद secure HttpOnly cookie उसी browser को याद रखती है। अगली scans में नाम या mobile फिर नहीं माँगा जाता; active membership पर attendance अपने आप mark होती है।\n- नए registration की fee pending रहती है और QR form payment record नहीं करता। Same-day repeat scan पर दूसरी attendance entry नहीं बनती।\n- Membership expired/not active हो तो attendance mark नहीं होती। Shared device पर \"Switch member\" दबाकर अगला member verify करें।\n- Dashboard पर \"Today's attendance\" में हर member का नाम, mobile, check-in time और ✓ Present दिखता है।",
+      "answer": "GymSaathi का Member QR code attendance और नए member registration—दोनों के लिए है:\n- QR link Settings में \"Member QR code\" section से खोलें या print करें। हर gym का QR link अलग होता है।\n- जिस device पर पहले से QR session नहीं है, पहली scan पर AI registration assistant chat खुलेगी। वह नाम और mobile पूछेगा; existing member match होते ही उसी record पर check-in होगा, और नया mobile होने पर assistant बाकी registration details लेकर review दिखाएगा।\n- सफल registration/verification के बाद secure HttpOnly cookie उसी browser को याद रखती है। अगली scans में नाम या mobile फिर नहीं माँगा जाता; active membership पर attendance अपने आप mark होती है।\n- नए registration की fee pending रहती है और QR form payment record नहीं करता। Same-day repeat scan पर दूसरी attendance entry नहीं बनती।\n- Membership expired/not active हो तो attendance mark नहीं होती। Shared device पर \"Switch member\" दबाकर अगला member verify करें।\n- Dashboard पर \"Today's attendance\" में हर member का नाम, mobile, check-in time और ✓ Present दिखता है।",
       "pass": true,
-      "reason": "mode=local, chars=965",
+      "reason": "mode=local, chars=1005",
       "raw": {
-        "answer": "GymSaathi का Member QR code attendance और नए member registration—दोनों के लिए है:\n- QR link Settings में \"Member QR code\" section से खोलें या print करें। हर gym का QR link अलग होता है।\n- जिस device पर पहले से QR session नहीं है, पहली scan पर registration form खुलेगा। नया member form भरेगा; पहले से दर्ज mobile + वही registered full name देने पर existing record पहचाना जाएगा—duplicate member नहीं बनेगा।\n- सफल registration/verification के बाद secure HttpOnly cookie उसी browser को याद रखती है। अगली scans में नाम या mobile फिर नहीं माँगा जाता; active membership पर attendance अपने आप mark होती है।\n- नए registration की fee pending रहती है और QR form payment record नहीं करता। Same-day repeat scan पर दूसरी attendance entry नहीं बनती।\n- Membership expired/not active हो तो attendance mark नहीं होती। Shared device पर \"Switch member\" दबाकर अगला member verify करें।\n- Dashboard पर \"Today's attendance\" में हर member का नाम, mobile, check-in time और ✓ Present दिखता है।",
+        "answer": "GymSaathi का Member QR code attendance और नए member registration—दोनों के लिए है:\n- QR link Settings में \"Member QR code\" section से खोलें या print करें। हर gym का QR link अलग होता है।\n- जिस device पर पहले से QR session नहीं है, पहली scan पर AI registration assistant chat खुलेगी। वह नाम और mobile पूछेगा; existing member match होते ही उसी record पर check-in होगा, और नया mobile होने पर assistant बाकी registration details लेकर review दिखाएगा।\n- सफल registration/verification के बाद secure HttpOnly cookie उसी browser को याद रखती है। अगली scans में नाम या mobile फिर नहीं माँगा जाता; active membership पर attendance अपने आप mark होती है।\n- नए registration की fee pending रहती है और QR form payment record नहीं करता। Same-day repeat scan पर दूसरी attendance entry नहीं बनती।\n- Membership expired/not active हो तो attendance mark नहीं होती। Shared device पर \"Switch member\" दबाकर अगला member verify करें।\n- Dashboard पर \"Today's attendance\" में हर member का नाम, mobile, check-in time और ✓ Present दिखता है।",
         "mode": "local"
       }
     },
@@ -348,11 +348,11 @@
     {
       "n": 32,
       "question": "Agar mobile number already registered hai to kya karu?",
-      "answer": "अगर पहली बार QR खोलने पर registration form दिख रहा है और आप पहले से member हैं, तो वही registered full name और mobile number भरें।\n- नाम और mobile existing record से match होंगे तो GymSaathi नया duplicate member बनाए बिना उसी member की attendance mark करेगा।\n- Match न हो तो “Already a member? Verify check-in” दबाकर registered details verify करें; बार-बार नया registration submit न करें।\n- सफल first verification के बाद वही browser/device याद रखा जाता है और अगली scans पर mobile दोबारा नहीं माँगा जाता।",
+      "answer": "अगर पहली बार QR खोलने पर AI registration assistant नाम और mobile पूछे, और आप पहले से member हैं, तो वही registered full name और mobile number बताएं।\n- नाम और mobile existing record से match होंगे तो GymSaathi बिना duplicate बनाए उसी member की attendance mark करेगा; नए mobile पर assistant registration जारी रखेगा।\n- Match न हो तो “Already a member? Check in” दबाकर registered details verify करें; बार-बार नया registration submit न करें।\n- सफल first verification के बाद वही browser/device याद रखा जाता है और अगली scans पर mobile दोबारा नहीं माँगा जाता।",
       "pass": true,
-      "reason": "mode=local, chars=503",
+      "reason": "mode=local, chars=551",
       "raw": {
-        "answer": "अगर पहली बार QR खोलने पर registration form दिख रहा है और आप पहले से member हैं, तो वही registered full name और mobile number भरें।\n- नाम और mobile existing record से match होंगे तो GymSaathi नया duplicate member बनाए बिना उसी member की attendance mark करेगा।\n- Match न हो तो “Already a member? Verify check-in” दबाकर registered details verify करें; बार-बार नया registration submit न करें।\n- सफल first verification के बाद वही browser/device याद रखा जाता है और अगली scans पर mobile दोबारा नहीं माँगा जाता।",
+        "answer": "अगर पहली बार QR खोलने पर AI registration assistant नाम और mobile पूछे, और आप पहले से member हैं, तो वही registered full name और mobile number बताएं।\n- नाम और mobile existing record से match होंगे तो GymSaathi बिना duplicate बनाए उसी member की attendance mark करेगा; नए mobile पर assistant registration जारी रखेगा।\n- Match न हो तो “Already a member? Check in” दबाकर registered details verify करें; बार-बार नया registration submit न करें।\n- सफल first verification के बाद वही browser/device याद रखा जाता है और अगली scans पर mobile दोबारा नहीं माँगा जाता।",
         "mode": "local"
       }
     },
@@ -480,22 +480,22 @@
     {
       "n": 44,
       "question": "Aaj kiski attendance lagi?",
-      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 01:42 am — ✓ Present",
+      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
       "pass": true,
       "reason": "mode=local, chars=72",
       "raw": {
-        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 01:42 am — ✓ Present",
+        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
         "mode": "local"
       }
     },
     {
       "n": 45,
       "question": "Kis member ne aaj attendance lagayi?",
-      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 01:42 am — ✓ Present",
+      "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
       "pass": true,
       "reason": "mode=local, chars=72",
       "raw": {
-        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 01:42 am — ✓ Present",
+        "answer": "आज 1 मेंबर की attendance mark हुई है:\n- Aman Singh: 11:04 am — ✓ Present",
         "mode": "local"
       }
     },
@@ -509,7 +509,7 @@
         "answer": "Aman Singh (9876543211) के ₹500 कैश में जमा करूँ?",
         "pending": {
           "do": "pay",
-          "id": "19e638912f940aae",
+          "id": "31d74b550f7022ab",
           "body": {
             "amount": 500,
             "mode": "Cash"
@@ -528,7 +528,7 @@
         "answer": "Aman Singh (9876543211) की मेंबरशिप 3 महीने के लिए रिन्यू करूँ?\n- 18 Nov 2026 से 17 Feb 2027\n- फीस: ₹1,300\n- पिछला बाकी: ₹500\n- अभी जमा: ₹0",
         "pending": {
           "do": "renew",
-          "id": "19e638912f940aae",
+          "id": "31d74b550f7022ab",
           "body": {
             "months": 3,
             "paid": 0,
@@ -548,7 +548,7 @@
       "raw": {
         "answer": "Aman Singh के लिए बाकी फीस का रिमाइंडर तैयार है। नीचे का बटन दबाइए, व्हाट्सऐप खुल जाएगा।",
         "remind": {
-          "id": "19e638912f940aae",
+          "id": "31d74b550f7022ab",
           "type": "fees"
         },
         "mode": "local"
