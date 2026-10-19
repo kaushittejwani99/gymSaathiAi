@@ -1117,20 +1117,27 @@ function rowNote(r, seen) {
 function importRows() {
   const rows = imp.rows,
     seen = rows.map((r) => r.phone),
+    sources = imp.sources || [],
+    sourceReview = sources.map((src) => src.preview
+      ? `<details open class="card-body" style="border-bottom:1px solid var(--border)"><summary><strong>Original photo:</strong> ${esc(src.name)} — compare names here</summary><a href="${src.preview}" target="_blank" rel="noopener noreferrer" title="Open photo in a new tab to zoom"><img src="${src.preview}" alt="Original uploaded register page" style="display:block;max-width:100%;max-height:460px;object-fit:contain;margin:10px auto;background:#f3f4f6"></a></details>`
+      : `<p class="card-body hint" style="border-bottom:1px solid var(--border)"><strong>Source file:</strong> ${esc(src.name)}. Open the original PDF and compare every handwritten name before confirming.</p>`
+    ).join(""),
     box = (r, name, attrs) =>
       `<input name="${name}" value="${esc(r[name])}" ${attrs} aria-label="${name}">`;
-  return `<section class="card"><div class="card-head"><h2>2. Check every row (${rows.length})</h2><span class="hint">Mend what was misread, remove what is not a member. Fee empty means the gym's price. Pending is what the member still owes.</span></div>
+  return `<section class="card"><div class="card-head"><h2>2. Check every row (${rows.length})</h2><span class="hint">Correct anything misread. Handwritten names from photos/PDFs must be checked and confirmed one by one before saving.</span></div>
+    ${sourceReview}
     ${table(
-      ["Name", "Mobile", "Started on", "Months", "Fee", "Pending", ""],
+      ["Name — verify spelling", "Mobile", "Started on", "Months", "Fee", "Pending", ""],
       rows.map((r) => {
-        const note = rowNote(r, seen);
+        const note = rowNote(r, seen), needsNameCheck = r.nameCheckRequired === true || r.nameCheckRequired === "yes";
         return `<tr class="import-row">
-      <td>${box(r, "name", 'maxlength="80"')}</td><td>${box(r, "phone", 'maxlength="15" inputmode="numeric"')}</td><td><input type="date" name="start" value="${esc(r.start)}" aria-label="start"></td>
+      <td>${box(r, "name", 'maxlength="80"')}${r.nameUncertain === true || r.nameUncertain === "yes" ? '<div class="low" style="font-size:12px;margin-top:4px">AI is unsure of this name — check the original.</div>' : ""}${needsNameCheck ? `<label style="display:flex;align-items:flex-start;gap:6px;margin-top:7px;font-size:12px;font-weight:500"><input type="checkbox" name="nameVerified" value="yes" ${r.nameVerified === "yes" || r.nameVerified === true ? "checked" : ""} style="width:auto;height:auto;flex:none;margin-top:3px"><span>I checked this name against the original</span></label>` : ""}<input type="hidden" name="nameCheckRequired" value="${needsNameCheck ? "yes" : ""}"><input type="hidden" name="nameUncertain" value="${r.nameUncertain === true || r.nameUncertain === "yes" ? "yes" : ""}"><input type="hidden" name="sourceName" value="${esc(r.sourceName || "")}"></td><td>${box(r, "phone", 'maxlength="15" inputmode="numeric"')}</td><td><input type="date" name="start" value="${esc(r.start)}" aria-label="start"></td>
       <td>${box(r, "months", `${NUM} min="1" max="36"`)}</td><td>${box(r, "fee", NUM)}</td><td>${box(r, "due", NUM)}</td>
       <td class="num">${note ? `<span class="low">${note}</span> ` : ""}<button type="button" class="btn ghost icon" data-action="import-drop" aria-label="Remove this row">${icon("x")}</button>
         <input type="hidden" name="gender" value="${esc(r.gender)}"><input type="hidden" name="age" value="${esc(r.age)}"><input type="hidden" name="batch" value="${esc(r.batch)}"><input type="hidden" name="notes" value="${esc(r.notes)}"></td></tr>`;
       }),
     )}
+    <p class="card-body hint">Do not confirm a name you cannot read. Edit it from the original, ask the member, or remove that row. Unconfirmed handwritten names cannot be saved.</p>
     <div class="card-body actions"><button class="btn primary" data-action="import-save">Save these members</button><button class="btn secondary" data-action="import-clear">Throw these rows away</button></div></section>`;
 }
 views.import = () =>
@@ -1183,7 +1190,10 @@ views.import = () =>
 const typedRows = () =>
   [...document.querySelectorAll(".import-row")].map((tr) =>
     Object.fromEntries(
-      [...tr.querySelectorAll("input")].map((i) => [i.name, i.value.trim()]),
+      [...tr.querySelectorAll("input")].map((i) => [
+        i.name,
+        i.type === "checkbox" ? (i.checked ? i.value : "") : i.value.trim(),
+      ]),
     ),
   );
 
@@ -1194,13 +1204,27 @@ Object.assign(actions, {
     if (imp.rows) imp.rows = typedRows(); // what the owner mended so far stays, and the next file's rows go below it
     button.textContent = "Reading… this can take a minute";
     try {
-      const r = await api("POST", "/api/import/read", await fileData(file));
-      imp = { rows: [...(imp.rows || []), ...r.rows], done: null };
+      const payload = await fileData(file);
+      const r = await api("POST", "/api/import/read", payload);
+      const needsNameCheck = /^image\//i.test(payload.type) || payload.type === "application/pdf";
+      const source = {
+        name: file.name,
+        preview: /^image\//i.test(payload.type) ? `data:${payload.type};base64,${payload.data}` : "",
+      };
+      const sourceRows = r.rows.map((row) => ({
+        ...row,
+        nameCheckRequired: needsNameCheck ? "yes" : "",
+        nameVerified: "",
+        sourceName: file.name,
+      }));
+      imp = { rows: [...(imp.rows || []), ...sourceRows], done: null, sources: [...(imp.sources || []), source] };
       toast(
         r.more
           ? `${r.rows.length} rows read. The file holds ${r.more} more: save these, then give the rest as another file.`
           : r.rows.length
-            ? `${r.rows.length} rows read. Check them.`
+            ? needsNameCheck
+              ? `${r.rows.length} rows read. Check the original photo/PDF and confirm every name before saving.`
+              : `${r.rows.length} rows read. Check them.`
             : "No member was found in this file.",
         !r.rows.length || !!r.more,
       );
@@ -1212,12 +1236,18 @@ Object.assign(actions, {
     el.closest("tr").remove();
   },
   "import-clear"() {
-    imp = { rows: null, done: null };
+    imp = { rows: null, done: null, sources: [] };
     route();
   },
   async "import-save"() {
     const rows = typedRows();
     if (!rows.length) return toast("There is no row to save.", true);
+    const unconfirmed = rows.findIndex((r) => r.nameCheckRequired === "yes" && r.nameVerified !== "yes");
+    if (unconfirmed >= 0) {
+      const row = unconfirmed + 1;
+      toast(`Row ${row}: original photo/PDF se naam milao, zarurat ho to spelling edit karo, phir “I checked this name” tick karo.`, true);
+      return;
+    }
     // 600 at a time is what the server takes. The rest stay on the screen, to be saved with the next press.
     const done = await api("POST", "/api/import/save", {
       rows: rows.slice(0, 600),
@@ -1225,6 +1255,7 @@ Object.assign(actions, {
     imp = {
       rows: [...done.skipped.map((k) => rows[k.row - 1]), ...rows.slice(600)],
       done,
+      sources: imp.sources || [],
     };
     if (rows.length > 600)
       toast(
