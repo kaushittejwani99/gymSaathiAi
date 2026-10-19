@@ -1139,27 +1139,34 @@ views.import = () =>
     "",
     `
   <section class="card"><div class="card-head"><h2>1. Choose a file</h2><span class="hint">A photo of the register, a PDF, an Excel file (.xlsx) or a CSV file. One file, or one page, at a time.</span></div>
-    <p class="hint">
-  <strong>Import old data:</strong>
-  Upload a CSV, Excel file, PDF or photo to import old member records.
-  Review every row before saving.
-  This does not back up all app data.
-  To back up members, memberships and payments together, use
-  <strong>Settings → Backup</strong>.
-</p><input
-  type="file"
-  name="file"
-  required
-  accept="image/*,.pdf,.xlsx,.xls,.csv,.txt"
-  aria-label="File of old members"
-  title="Choose a CSV, Excel, PDF or photo containing old member records."
->
-<button
-  class="btn primary"
-  title="Read the selected file and prepare member rows for you to review before saving."
->Read the file</button></form>
+    <div class="card-body">
+      <p class="hint">
+        <strong>Import old data:</strong>
+        Upload a CSV, Excel file, PDF or photo to import old member records.
+        Review every row before saving.
+        This does not back up all app data.
+        To back up members, memberships and payments together, use
+        <strong>Settings → Backup</strong>.
+      </p>
+      <form data-action="import-read">
+        <input
+          type="file"
+          name="file"
+          required
+          accept="image/*,.pdf,.xlsx,.xls,.csv,.txt"
+          aria-label="File of old members"
+          title="Choose a CSV, Excel, PDF or photo containing old member records."
+        >
+        <button
+          type="submit"
+          class="btn primary"
+          title="Read the selected file and prepare member rows for you to review before saving."
+        >Read the file</button>
+      </form>
       <p class="hint">For a photo: lay the page flat, in good light, with the whole page in the picture. The AI reads it and can misread handwriting, so look through every row before you save.
-        ${S.aiEnabled ? "" : '<strong class="low">No AI key is set, so a file cannot be read.</strong>'}</p></div></section>
+        ${S.aiEnabled ? "" : '<strong class="low">No AI key is set, so a file cannot be read.</strong>'}</p>
+    </div>
+  </section>
   ${
     imp.done
       ? `<section class="card"><div class="card-body"><strong>${imp.done.added} members added.</strong>${
