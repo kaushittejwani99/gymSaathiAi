@@ -85,6 +85,9 @@ const payDel = (p) =>
     ? ""
     : `<button class="btn ghost icon" data-action="payment-edit" data-id="${esc(p.id)}" aria-label="Change payment">${icon("edit")}</button><button class="btn ghost icon" data-action="payment-delete" data-id="${esc(p.id)}" data-name="${esc(p.name)}" data-amount="${money(p.amount)}" aria-label="Delete payment">${icon("trash")}</button>`;
 
+// A gym's name as a file name: Chrome drops a download name in Hindi letters and saves it as "download", with no
+// .csv, so a name with no English letters is "gym".
+const fileName = (name) => name.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "") || "gym";
 // Saves a table as a .csv file, which Excel opens. A cell that starts like a formula is written as plain text.
 function saveTable(name, rows) {
   const cell = (v) => {
@@ -97,7 +100,7 @@ function saveTable(name, rows) {
       type: "text/csv;charset=utf-8",
     }),
   );
-  a.download = `${S.gym.name.replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")}-${name}-${today()}.csv`;
+  a.download = `${fileName(S.gym.name)}-${name}-${today()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -674,7 +677,10 @@ views.members = (id) => {
 </a><button class="btn secondary"
   data-action="export-members"
   title="Download member details and current membership/payment summary as a CSV file that Excel can open."
-  ${off(!S.members.length, "There is no member to download yet")}>Download Excel</button><button class="btn secondary" data-action="member-new">${icon("plus")}Add by typing</button><a class="btn primary" href="#/bolo?new=1">${icon("mic")}New member by voice</a>`,
+  ${off(!S.members.length, "There is no member to download yet")}>Download Excel</button><button class="btn secondary"
+  data-action="export-attendance"
+  title="Download every QR check-in, all days: date, time, member and mobile, as a CSV file that Excel can open."
+  ${off(!S.members.length, "There is no member yet")}>Download attendance</button><button class="btn secondary" data-action="member-new">${icon("plus")}Add by typing</button><a class="btn primary" href="#/bolo?new=1">${icon("mic")}New member by voice</a>`,
       `
       <div class="card"><div class="tabs">${tabs.map(([v, label]) => `<button class="tab" data-action="tab" data-value="${v}" ${F.tab === v ? 'aria-pressed="true"' : ""}>${label}</button>`).join("")}</div>
         <div class="filters"><input type="search" data-action="search" value="${esc(F.q)}" placeholder="Search name or mobile number" aria-label="Search members"></div>
@@ -982,6 +988,20 @@ Object.assign(actions, {
         STATUS[G.statusOf(m, t)][1],
         m.notes,
       ]),
+    ]);
+  },
+  // Every check-in of every day, newest first. A deleted member's check-ins keep their name.
+  // ponytail: reads the gym's whole backup to get them; give attendance a route of its own if that gets slow.
+  async "export-attendance"() {
+    const { customers, attendance = [] } = await api("GET", "/api/backup");
+    if (!attendance.length) return toast("No check-ins yet. They are noted when members scan the gym's QR code.", true);
+    const who = new Map(customers.map((c) => [c._id, c]));
+    const time = (iso) => new Date(iso).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" });
+    saveTable("attendance", [
+      ["Date", "Check-in time", "Member", "Mobile"],
+      ...attendance
+        .sort((a, b) => (a.checkedAt < b.checkedAt) - (a.checkedAt > b.checkedAt))
+        .map((a) => [a.date, time(a.checkedAt), (who.get(a.customerId) || {}).name || "", (who.get(a.customerId) || {}).phone || ""]),
     ]);
   },
   "export-payments"() {
@@ -2058,7 +2078,7 @@ async function backupFile() {
     };
   }
   return {
-    name: `${S.gym.name.replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")}-backup-${today()}.json`,
+    name: `${fileName(S.gym.name)}-backup-${today()}.json`,
     blob: new Blob([JSON.stringify(await api("GET", "/api/backup"), null, 1)], {
       type: "application/json",
     }),
