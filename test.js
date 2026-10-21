@@ -252,8 +252,8 @@ async function talkChecks() {
     const like = await opening('एक नया मेंबर ऐड करो जिसका नाम रोहित रखो और उसमें सारी की सारी डिटेल्स कोशिश की ऐड कर दो');
     assert.deepEqual([like.say, like.next, like.form], ['Kaushik Tejwani की डिटेल्स भर दी हैं। Rohit जी का मोबाइल नंबर बताइए।', 'phone',
       { name: 'Rohit', height: '', goal: 'Muscle gain', health: '', batch: 'Morning', gender: 'Male', age: 26, weight: '', pt: true, diet: false, months: 3 }]);
-    assert.deepEqual([(await opening('नाम रोहित रखो और डिटेल्स सुरेश की डाल दो')).say, (await opening('नाम रोहित है')).say], // two Sureshes: nobody is picked
-      ['किसकी डिटेल्स भरनी हैं, यह समझ नहीं आया, इसलिए एक-एक करके पूछ रहा हूँ। Rohit जी का मोबाइल नंबर बताइए।', 'ठीक है। Rohit जी का मोबाइल नंबर बताइए।']);
+    assert.deepEqual([(await opening('नाम रोहित रखो और डिटेल्स सुरेश की डाल दो')).say, (await opening('नाम रोहित है')).say], // a short name is read at once, without the AI // two Sureshes: nobody is picked
+      ['किसकी डिटेल्स भरनी हैं, यह समझ नहीं आया, इसलिए एक-एक करके पूछ रहा हूँ। Rohit जी का मोबाइल नंबर बताइए।', 'ठीक है। रोहित जी का मोबाइल नंबर बताइए।']);
     // 'Shall I?' is answered without the AI: a yes sends it, a no drops it, anything else is a new message. So are the
     // plain orders: money taken and a renewal, with 'which one?' and 'for how many months?' asked on the way
     global.fetch = () => { throw new Error('the AI is not asked'); };

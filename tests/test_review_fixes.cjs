@@ -29,6 +29,21 @@ const ai = require(path.join(repo, 'lib/ai.js'));
   assert.ok(!(await ask('kiski membership khatam ho rahi hai batao')).includes('हटाने'));
   assert.ok(!(await ask('कलेक्शन कितना हुआ')).includes('कल'));
   assert.equal((await ai.chat({ question: 'priya ki fees jama ho gayi', db: gymDb, today: '2026-10-21' })).pending.do, 'pay');
+  // With the AI on, an everyday answer is read at once; only a long sentence waits for the AI (it takes seconds)
+  const realFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => { calls++; return Response.json({ steps: [{ type: 'model_output', content: [{ type: 'text', text: '{"name":"Priya Jain","age":24,"weight":58}' }] }] }); };
+  process.env.GEMINI_API_KEY = 'test-key';
+  try {
+    const plainly = [['name', 'Kaushit Tejwani'], ['name', 'mera naam Kaushit Tejwani hai'], ['phone', 'mera number 98290 22222 hai'], ['batch', 'शाम को आएँगे'], ['weight', '70 kilo hai']];
+    for (const [asked, said] of plainly) await ai.turn({ gym, form: {}, asked, said });
+    assert.deepEqual([calls, (await ai.turn({ gym, form: {}, asked: 'name', said: 'mera naam Kaushit Tejwani hai' })).form.name], [0, 'Kaushit Tejwani']);
+    await ai.turn({ gym, form: {}, asked: 'name', said: 'inka naam priya jain hai, 24 saal ki hain aur wazan 58 kilo hai' });
+    assert.equal(calls, 1);
+  } finally {
+    global.fetch = realFetch;
+    process.env.GEMINI_API_KEY = '';
+  }
 
   const srv = await server.start(0), base = `http://127.0.0.1:${srv.address().port}`;
   const req = async (method, url, body, cookie) => {
