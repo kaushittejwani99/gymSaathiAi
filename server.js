@@ -9,6 +9,7 @@ const zlib = require('node:zlib');
 
 const ROOT = __dirname, PUBLIC = path.join(ROOT, 'public');
 if (fs.existsSync(path.join(ROOT, '.env'))) process.loadEnvFile(path.join(ROOT, '.env')); // before db.js reads its settings
+process.env.TZ ||= 'Asia/Kolkata'; // a gym's day is India's day, also on a host left at UTC
 
 const G = require('./lib/core');
 const db = require('./lib/db');
@@ -26,7 +27,7 @@ const CACHE_SECONDS = 300;           // how long a gym's records are kept in the
 const SEND_FROM = 6, SEND_TILL = 21; // reminders go out by themselves from 6 in the morning, and never at night
 const TRIAL_MONTHS = 1, PRICE = 999; // a gym's first month from its first sign-in is free; after that it pays PRICE a month
 const OWNER_DAYS = 30;               // how long the owner of the service stays signed in
-const CSP = "default-src 'self'; img-src 'self' data: https://api.qrserver.com; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+const CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const MODES = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Other'];
 
@@ -169,6 +170,7 @@ const windows = new Map();
 function bucket(key, ms) {
   const now = Date.now(), w = windows.get(key);
   if (w && w.until > now) return w;
+  if (windows.size > 10000) for (const [k, old] of windows) if (old.until <= now) windows.delete(k);
   const fresh = { n: 0, until: now + ms };
   windows.set(key, fresh);
   return fresh;
@@ -211,19 +213,19 @@ async function memberById(gymId, id) {
 }
 // Everything of one gym.
 async function loadGym(account) {
-  // The three reads below are what every page of a gym needs, so their answer is kept until the gym changes something.
+  // The reads below are what every page of a gym needs, so their answer is kept until the gym changes something.
+  const attendanceDate = indiaToday();
   const own = await cache.through(`records:${account._id}`, keepFor,
-    () => Promise.all(['customers', 'memberships', 'transactions'].map((name) => db.find(name, { gymId: account._id }))));
+    () => Promise.all([...['customers', 'memberships', 'transactions'].map((name) => db.find(name, { gymId: account._id })), db.find('attendance', { gymId: account._id, date: attendanceDate })]));
   const shown = account.sample ? sample.records(account._id, indiaToday()) : { customers: [], memberships: [], transactions: [] };
   const all = [...shown.customers, ...own[0]], periods = [...shown.memberships, ...own[1]], everyPaid = [...shown.transactions, ...own[2]];
   const customers = all.filter(live), here = new Map(customers.map((c) => [c._id, c.name]));
   const paid = everyPaid.filter((t) => here.has(t.customerId)).sort((a, b) => (a.createdAt > b.createdAt) - (a.createdAt < b.createdAt));
-  const attendanceDate = indiaToday();
-  const attendanceRows = await db.find('attendance', { gymId: account._id, date: attendanceDate });
-  const attendance = attendanceRows.map((a) => {
-    const member = customers.find((c) => c._id === a.customerId);
-    return member ? { id: member._id, name: member.name, phone: member.phone, date: a.date, checkedAt: a.checkedAt, source: a.source || 'qr' } : null;
-  }).filter(Boolean).sort((a, b) => a.checkedAt.localeCompare(b.checkedAt));
+  const byId = new Map(customers.map((c) => [c._id, c]));
+  const attendance = (own[3] || []).filter((a) => a.date === attendanceDate && byId.has(a.customerId)).map((a) => {
+    const member = byId.get(a.customerId); // kept from before midnight, yesterday's rows are left out above
+    return { id: member._id, name: member.name, phone: member.phone, date: a.date, checkedAt: a.checkedAt, source: a.source || 'qr' };
+  }).sort((a, b) => a.checkedAt.localeCompare(b.checkedAt));
   return { gym: account.details, sent: account.sent, attendanceDate, attendance, deleted: all.filter((c) => c.deletedAt).map((c) => ({ id: c._id, name: c.name, phone: c.phone, deletedAt: c.deletedAt })),
     members: customers.map((c) => memberOf(c, periods.filter((p) => p.customerId === c._id), paid.filter((t) => t.customerId === c._id))),
     // A payment carries the name its member has now: one renamed since is not listed under the old name.
@@ -237,10 +239,11 @@ async function purgeMember(gymId, id) {
   await db.remove('memberships', { gymId, customerId: id });
   await db.remove('transactions', { gymId, customerId: id });
   await db.remove('member_qr_sessions', { gymId, customerId: id });
+  await db.remove('attendance', { gymId, customerId: id });
   await cache.drop(`records:${gymId}`);
 }
 async function purgeGym(id) {
-  for (const name of ['sessions', 'member_qr_sessions', 'backups', 'exports', 'transactions', 'memberships', 'customers']) await db.remove(name, { gymId: id });
+  for (const name of ['sessions', 'member_qr_sessions', 'attendance', 'backups', 'exports', 'transactions', 'memberships', 'customers']) await db.remove(name, { gymId: id });
   await db.remove('gyms', { _id: id });
   forget(id);
   await cache.drop(`records:${id}`, `exports:${id}`);
@@ -537,8 +540,10 @@ async function publicJoinApi(req, res, url) {
 
   // The only public writes are identity verification, self-registration and clearing this device's own QR session.
   const client = clientOf(req);
-  const limitWindow = action === 'register' ? 15 * 60e3 : 60e3;
-  const limitMax = action === 'register' ? 8 : action === 'assistant-turn' ? 45 : 120;
+  // lookup answers whether a mobile number is a member, so it is limited like register; a device that has checked in
+  // once is known by its cookie and never asks again
+  const limitWindow = ['register', 'lookup'].includes(action) ? 15 * 60e3 : 60e3;
+  const limitMax = action === 'register' ? 8 : action === 'lookup' ? 30 : action === 'assistant-turn' ? 45 : 120;
   const limit = bucket(`public qr ${action} ${token} ${client}`, limitWindow);
   if (limit.n++ >= limitMax) fail(429, 'Too many attempts. Please wait a little and try again.');
   const body = await readJsonBody(req);
@@ -554,7 +559,9 @@ async function publicJoinApi(req, res, url) {
     // into an unauthenticated AI request: it could expose other members' private details or copy their records.
     const result = await ai.turn({
       gym: account.details,
-      form: body.form && typeof body.form === 'object' && !Array.isArray(body.form) ? body.form : {},
+      // A trainer or a diet plan the gym does not sell is not asked about (registration would drop it anyway).
+      form: { ...(body.form && typeof body.form === 'object' && !Array.isArray(body.form) ? body.form : {}),
+        ...(!G.num(account.details.ptPrice) && { pt: false }), ...(!G.num(account.details.dietPrice) && { diet: false }) },
       asked: G.str(body.asked, 20),
       said: G.str(body.said, 500),
       tries: Math.max(0, Math.min(5, Number(body.tries) || 0)),
@@ -587,6 +594,8 @@ async function publicJoinApi(req, res, url) {
   if (body.website) return json(res, 200, { status: 'registered', message: 'Thanks. Please contact gym staff to confirm your registration.' }), true;
   if (body.accept !== true) fail(400, 'Please confirm that your details are correct.');
   const phone = phoneOf(body.phone), name = required(body.name, 'Your full name', 80);
+  // A stranger's text reaches the owner's screens and the AI as a name: letters only, nothing that reads as an instruction.
+  if (!/^[\p{L}\p{M}][\p{L}\p{M} .'-]*$/u.test(name)) fail(400, 'Please write your name in letters only.');
   let result, sessionSecret = '', existingMember = null;
   await write(async () => {
     // First-time QR scans show the registration form. If that number already belongs to a member,

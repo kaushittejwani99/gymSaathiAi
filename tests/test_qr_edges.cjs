@@ -7,7 +7,7 @@ fs.rmSync(dataDir, {recursive:true, force:true});
 process.env.DATA_DIR=dataDir;
 process.env.ADMIN_EMAIL='edge-owner@example.test';
 process.env.ADMIN_PASSWORD='StrongAdmin123!';
-process.env.GEMINI_API_KEY = ''; process.env.MONGODB_URI = ''; process.env.REDIS_URL = '';
+process.env.GEMINI_API_KEY = ''; process.env.MONGODB_URI = ''; process.env.REDIS_URL = ''; process.env.WHATSAPP_TOKEN = ''; process.env.WHATSAPP_PHONE_ID = '';
 const server = require(path.join(baseDir, 'server.js'));
 const db = require(path.join(baseDir, 'lib/db.js'));
 const indiaDay=(d=new Date())=>{const f=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'});const p=Object.fromEntries(f.formatToParts(d).map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`;};
@@ -76,7 +76,7 @@ async function main(){
   const mainMarkup=fs.readFileSync(path.join(baseDir,'public/app.js'),'utf8');const styles=fs.readFileSync(path.join(baseDir,'public/styles.css'),'utf8');
   check('Dashboard attendance UI renders ✓ Present + member name + mobile + check-in time',mainMarkup.includes('attendance-tick')&&mainMarkup.includes('✓ Present')&&mainMarkup.includes('a.name')&&mainMarkup.includes('a.phone')&&mainMarkup.includes('Check-in time'));
   check('Chat bubble CSS removes forced tall boxes',/\.msg\s*\{[^}]*height:\s*auto/s.test(styles)&&/\.msg\s*\{[^}]*min-height:\s*0/s.test(styles));
-  const total=checks.length,passed=checks.filter(c=>c.pass).length;fs.writeFileSync(path.join(baseDir, 'GymSaathi_QR_Edge_Test_Results.json'),JSON.stringify({environment:'isolated file-backed local test server; no live services',total,passed,failed:total-passed,checks},null,2));console.log(`\nQR EDGE TESTS: ${passed}/${total} passed`);if(passed!==total)process.exitCode=1;
+  const total=checks.length,passed=checks.filter(c=>c.pass).length;fs.writeFileSync(path.join(require('node:os').tmpdir(), 'GymSaathi_QR_Edge_Test_Results.json'),JSON.stringify({environment:'isolated file-backed local test server; no live services',total,passed,failed:total-passed,checks},null,2));console.log(`\nQR EDGE TESTS: ${passed}/${total} passed`);if(passed!==total)process.exitCode=1;
  }finally{srv.close();}
 }
 main().catch(e=>{console.error(e.stack||e);process.exitCode=2;});

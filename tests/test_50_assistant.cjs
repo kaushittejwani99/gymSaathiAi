@@ -6,7 +6,7 @@ fs.rmSync(dataDir, { recursive: true, force: true });
 process.env.DATA_DIR = dataDir;
 process.env.ADMIN_EMAIL = 'owner@example.test';
 process.env.ADMIN_PASSWORD = 'StrongAdmin123!';
-process.env.GEMINI_API_KEY = ''; process.env.MONGODB_URI = ''; process.env.REDIS_URL = '';
+process.env.GEMINI_API_KEY = ''; process.env.MONGODB_URI = ''; process.env.REDIS_URL = ''; process.env.WHATSAPP_TOKEN = ''; process.env.WHATSAPP_PHONE_ID = '';
 const serverMod = require(path.join(baseDir, 'server.js'));
 const checks=[];
 function ok(name, pass, detail='') { checks.push({name,pass:!!pass,detail}); }
@@ -105,8 +105,9 @@ async function main(){
     results.push({n:i+1,question,answer:answer||JSON.stringify(obj),pass:passed,reason,raw:obj});
     console.log(`${passed?'PASS':'FAIL'} ${i+1}. ${question}\n   ${answer.replace(/\n/g,' | ').slice(0,250)}\n   ${reason}`);
   }
-  fs.writeFileSync(path.join(baseDir, 'GymSaathi_50_Assistant_Test_Results.json'),JSON.stringify({env:'isolated local file-backed DB; quick/local fallback; Gemini key removed',questionCount:questions.length,pass:results.filter(x=>x.pass).length,fail:results.filter(x=>!x.pass).length,results},null,2));
+  fs.writeFileSync(path.join(require('node:os').tmpdir(), 'GymSaathi_50_Assistant_Test_Results.json'),JSON.stringify({env:'isolated local file-backed DB; quick/local fallback; Gemini key removed',questionCount:questions.length,pass:results.filter(x=>x.pass).length,fail:results.filter(x=>!x.pass).length,results},null,2));
   console.log(`\n50-QUESTION RUN: ${results.filter(x=>x.pass).length}/${results.length} assertions passed`);
+  if(results.some(x=>!x.pass)) process.exitCode=1; // a failed question fails the run
   console.log('FAILURES',JSON.stringify(results.filter(x=>!x.pass).map(({n,question,answer,reason})=>({n,question,answer,reason})),null,2));
  } finally { srv.close(); }
 }

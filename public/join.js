@@ -28,7 +28,7 @@
     }
     let response;
     try { response = await fetch(`/api/public/join/${token}${path}`, options); }
-    catch { throw new Error('Server se connect nahi ho paya. Internet check karke dobara try karein.'); }
+    catch { throw Object.assign(new Error('Server se connect nahi ho paya. Internet check karke dobara try karein.'), { network: true }); }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Request complete nahi ho payi. Dobara try karein.');
     return data;
@@ -96,8 +96,8 @@
     const rows = [
       ['Name', form.name], ['Mobile', form.phone], ['Gender', form.gender], ['Age', form.age],
       ['Weight', form.weight ? `${form.weight} kg` : ''], ['Height', form.height], ['Fitness goal', form.goal],
-      ['Health notes', form.health], ['Batch', form.batch], ['Personal trainer', form.pt ? 'Yes' : (form.pt === false ? 'No' : '')],
-      ['Diet plan', form.diet ? 'Yes' : (form.diet === false ? 'No' : '')], ['Membership plan', plan ? plan.label : `${form.months} months`],
+      ['Health notes', form.health], ['Batch', form.batch], ['Personal trainer', !extras.pt ? '' : form.pt ? 'Yes' : (form.pt === false ? 'No' : '')],
+      ['Diet plan', !extras.diet ? '' : form.diet ? 'Yes' : (form.diet === false ? 'No' : '')], ['Membership plan', plan ? plan.label : `${form.months} months`],
     ].filter(([, val]) => val !== undefined && val !== null && String(val).trim() !== '');
     const summary = $('#reviewSummary');
     summary.replaceChildren();
@@ -118,12 +118,14 @@
     $('#reviewPanel').hidden = false;
     $('#confirmButton').disabled = false;
   }
-  async function checkExistingAfterIdentity() {
-    if (turnState.identityChecked || !turnState.form.name || !validPhone(String(turnState.form.phone || ''))) return null;
+  // Called with the form as the latest turn left it, before turnState moves on: if the lookup fails, the same answer can
+  // simply be sent again.
+  async function checkExistingAfterIdentity(form) {
+    if (turnState.identityChecked || !form.name || !validPhone(String(form.phone || ''))) return null;
+    const result = await request('/lookup', { name: form.name, phone: form.phone }, 'POST');
     turnState.identityChecked = true;
-    const result = await request('/lookup', { name: turnState.form.name, phone: turnState.form.phone }, 'POST');
     if (result.status === 'present' || result.status === 'already') {
-      showSuccess(result.status === 'present' ? '✓ Attendance marked' : '✓ Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message || 'Aaj ki attendance confirm ho gayi.'}`, null);
+      showSuccess(result.status === 'present' ? 'Attendance marked' : 'Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message || 'Aaj ki attendance confirm ho gayi.'}`, null);
       return 'finished';
     }
     if (result.status === 'inactive') {
@@ -150,8 +152,8 @@
       let result = await request('/assistant-turn', {
         form: turnState.form, asked: turnState.asked, said: text, tries: turnState.tries, spoken,
       }, 'POST');
-      if (result.setup) {
-        notice(result.say || 'Gym ki membership pricing set nahi hai. Existing member verify karke check-in kar sakta hai.');
+      if (result.setup) { // result.say is written for the gym owner, not for a member
+        notice('Is gym mein abhi naya registration band hai. Existing member apna naam aur mobile verify karke check-in kar sakte hain, ya gym desk se baat karein.');
         visible('#lookupPanel');
         return;
       }
@@ -160,7 +162,7 @@
         turnState.form = result.form || turnState.form;
         turnState.asked = result.next || turnState.asked;
         turnState.tries = result.tries || 0;
-        return;
+        return true;
       }
       // QR self-registration never accepts or records payment. Internally answer the staff-registration turn as ₹0 paid.
       if (result.next === 'paid' && !result.done && !result.cancel) {
@@ -168,6 +170,10 @@
           form: { ...(result.form || {}), paid: 0 }, asked: 'paid', said: '0', tries: 0, spoken: false,
         }, 'POST');
       }
+      // Existing members complete only name + mobile: the matching record gets attendance; no duplicate member is created.
+      const checked = result.cancel ? null : await checkExistingAfterIdentity(result.form || {});
+      if (checked) { $('#voiceStatus').textContent = 'Check-in result received.'; return true; }
+      notice('');
       turnState.form = result.form || {};
       turnState.asked = result.next || '';
       turnState.tries = result.tries || 0;
@@ -178,11 +184,8 @@
         addMessage(result.say || 'Registration cancel kar di gayi.', 'assistant', true);
         $('#voiceStatus').textContent = 'Registration paused. Start again to begin another time.';
         setButtonsForQuestion();
-        return;
+        return true;
       }
-      // Existing members complete only name + mobile: the matching record gets attendance; no duplicate member is created.
-      const checked = await checkExistingAfterIdentity();
-      if (checked) { $('#voiceStatus').textContent = 'Check-in result received.'; return; }
       if (result.say) addMessage(result.say, 'assistant', true);
       if (result.done) {
         turnState.asked = '';
@@ -194,9 +197,11 @@
       }
       setButtonsForQuestion();
       $('#replyInput').focus();
+      return true;
     } catch (error) {
       notice(error.message);
       $('#voiceStatus').textContent = 'Request failed. Aap dobara try kar sakte hain.';
+      return false;
     } finally {
       setBusy(false);
       setButtonsForQuestion();
@@ -220,7 +225,7 @@
     const text = input.value.trim();
     if (!text || busy) return;
     input.value = '';
-    await askAssistant(text, false, true);
+    if (!(await askAssistant(text, false, true))) input.value = text; // not sent: the answer stays to send again
   });
   $('#skipButton').addEventListener('click', async () => { if (!busy && !turnState.blocked) await askAssistant('skip', false, true); });
   $('#restartButton').addEventListener('click', async () => { await startAssistant(); });
@@ -240,11 +245,11 @@
         pt: form.pt === true, diet: form.diet === true, accept: true,
       }, 'POST');
       if (result.status === 'present' || result.status === 'already') {
-        showSuccess(result.status === 'present' ? '✓ Attendance marked' : '✓ Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message || 'Aaj ki attendance confirm ho gayi.'}`, null);
+        showSuccess(result.status === 'present' ? 'Attendance marked' : 'Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message || 'Aaj ki attendance confirm ho gayi.'}`, null);
       } else if (result.status === 'inactive') {
         showSuccess('Membership active nahi hai', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message}`, null);
       } else {
-        showSuccess('Registration complete ✓', result.message || 'Member registration save ho gayi. Aaj ki attendance status upar diya hai.', result.fee);
+        showSuccess('Registration complete', result.message || 'Member registration save ho gayi. Aaj ki attendance status upar diya hai.', result.fee);
       }
     } catch (error) {
       notice(error.message);
@@ -263,11 +268,13 @@
     try {
       const result = await request('/lookup', { name, phone }, 'POST');
       if (result.status === 'present' || result.status === 'already') {
-        showSuccess(result.status === 'present' ? '✓ Attendance marked' : '✓ Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message || 'Aaj ki attendance confirm ho gayi.'}`, null);
+        showSuccess(result.status === 'present' ? 'Attendance marked' : 'Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message || 'Aaj ki attendance confirm ho gayi.'}`, null);
       } else if (result.status === 'inactive') {
         showSuccess('Membership active nahi hai', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message}`, null);
       } else if (result.status === 'mismatch') {
         notice(result.message || 'Name aur mobile number match nahi hua.');
+      } else if (!plans.length) {
+        notice('Is mobile number se koi member nahi mila, aur is gym mein abhi naya registration band hai. Gym desk se baat karein.');
       } else {
         visible('#assistantPanel');
         turnState = { form: { name, phone }, asked: 'gender', tries: 0, fee: 0, identityChecked: true, blocked: false };
@@ -330,7 +337,7 @@
     const details = [gym.timings, gym.amenities].filter(Boolean).join(' · ');
     $('#gymDetails').textContent = details || 'Member registration and check-in';
     if (result.status === 'present' || result.status === 'already') {
-      showSuccess(result.status === 'present' ? '✓ Attendance marked' : '✓ Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message}`, null);
+      showSuccess(result.status === 'present' ? 'Attendance marked' : 'Already checked in', `${result.memberName ? `Namaste ${result.memberName}. ` : ''}${result.message}`, null);
       return;
     }
     if (result.status === 'inactive') {
@@ -346,7 +353,7 @@
   }
   start().catch((error) => {
     panels.forEach((selector) => { $(selector).hidden = true; });
-    $('#gymName').textContent = 'QR link unavailable';
+    $('#gymName').textContent = error.network ? 'No connection' : 'QR link unavailable';
     $('#gymDetails').textContent = '';
     notice(error.message);
   });

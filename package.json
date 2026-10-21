@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test.js"
+    "test": "node test.js && node tests/run_e2e.cjs && node tests/test_qr_edges.cjs && node tests/test_50_assistant.cjs && node tests/test_review_fixes.cjs"
   },
   "engines": {
     "node": ">=20.12"

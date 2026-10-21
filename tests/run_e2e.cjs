@@ -7,9 +7,9 @@ fs.rmSync(dataDir, { recursive: true, force: true });
 process.env.DATA_DIR = dataDir;
 process.env.ADMIN_EMAIL = 'owner@example.test';
 process.env.ADMIN_PASSWORD = 'StrongAdmin123!';
-delete process.env.GEMINI_API_KEY;
-delete process.env.MONGODB_URI;
-delete process.env.REDIS_URL;
+// Empty, not deleted: server.js loads .env, which fills in any variable that is missing, and would point this test at
+// the real MongoDB, Gemini and WhatsApp.
+Object.assign(process.env, { GEMINI_API_KEY: '', MONGODB_URI: '', REDIS_URL: '', WHATSAPP_TOKEN: '', WHATSAPP_PHONE_ID: '' });
 const serverMod = require(path.join(baseDir, 'server.js'));
 const db = require(path.join(baseDir, 'lib/db.js'));
 const ai = require(path.join(baseDir, 'lib/ai.js'));

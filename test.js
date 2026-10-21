@@ -80,7 +80,7 @@ async function talkChecks() {
   db.members.push(member('e', 'Kaushik Tejwani', '9116398862', 1000), member('f', 'Meena Das', '9829066666', 0), member('g', 'Tina Chaudhary', '9829077777', 0));
   assert.deepEqual([(await fresh('कौशिक की फीस जमा हुई है कि नहीं हुई है'))[2], (await fresh('तेजवानी का हिसाब'))[2], (await fresh('प्रिया जैन की मेंबरशिप'))[2], (await fresh('मीना की फीस'))[2], (await fresh('टीना चौधरी'))[2]],
     ['- मोबाइल: 9116398862', '- मोबाइल: 9116398862', '- मोबाइल: 9829044444', '- मोबाइल: 9829066666', '- मोबाइल: 9829077777']);
-  assert.deepEqual([(await fresh('इस महीने में कितना पैसा आया'))[0], (await fresh('किसकी फीस बाकी है'))[0].slice(0, 10), (await fresh('तीन दिन में दस मेंबर की मेंबरशिप खत्म होगी क्या'))[0].slice(0, 9)], ['इस महीने ₹0 जमा हुए, 0 भुगतान में।', '3 मेंबर की', '7 दिन में']);
+  assert.deepEqual([(await fresh('इस महीने में कितना पैसा आया'))[0], (await fresh('किसकी फीस बाकी है'))[0].slice(0, 10), (await fresh('तीन दिन में दस मेंबर की मेंबरशिप खत्म होगी क्या'))[0].slice(0, 9)], ['जिम की इस महीने payment report: कुल ₹0 (0 भुगतान)।', '3 मेंबर की', 'अगले 7 दि']);
   db.members.length = 4;
   // A question may ask for a detail of the member: the sentence gives it, or says that it is not written down
   db.members[3].goal = 'Weight loss';
@@ -165,13 +165,13 @@ async function talkChecks() {
   const shop = { gym: { name: 'Fit Zone', price1: 1000, price3: 2700, ptPrice: 2000, timings: '6 से 10' }, payments: [{ amount: 1000, date: today, mode: 'Cash' }, { amount: 600, date: '2026-10-10', mode: 'UPI' }, { amount: 900, date: '2026-09-20', mode: 'Cash' }],
     members: [{ ...member('a', 'Rahul Sharma', '9829011111', 0), pt: true }, { ...member('d', 'Priya Jain', '9829044444', 400), gender: 'Female', batch: 'Evening' }, { ...member('f', 'Meena Das', '9829066666', 0), end: '2026-10-05' }, { ...member('s', 'Sample Singh', '9829088888', 300), sample: true }] };
   for (const [said, begins, more] of [
-    ['tum kya kya kar sakte ho', 'मैं ये काम कर सकता हूँ।', 7], ['aaj kitna paisa aaya', 'आज ₹1,000 जमा हुए, 1 भुगतान में।', 2], ['kal kitna aaya', 'कल ₹600 जमा हुए', 2], ['pichhle mahine kitna aaya', 'पिछले महीने ₹900 जमा हुए', 2], ['cash kitna aaya upi kitna', 'इस महीने ₹1,600 जमा हुए', 3],
-    ['3 mahine ki fees kitni hai', 'जिम की फीस यह है।', 4], ['एक साल का कितना लगता है', 'जिम की फीस यह है।', 4], ['gym ka time kya hai', 'जिम का समय: 6 से 10।', 1], ['fees badha do', 'जिम की फीस Settings में बदलती है।', 1],
+    ['tum kya kya kar sakte ho', 'मैं GymSaathi का असिस्टेंट हूँ।', 9], ['aaj kitna paisa aaya', 'जिम की आज payment report: कुल ₹1,000 (1 भुगतान)।', 2], ['kal kitna aaya', 'कल ₹600 जमा हुए', 2], ['pichhle mahine kitna aaya', 'पिछले महीने ₹900 जमा हुए', 2], ['cash kitna aaya upi kitna', 'इस महीने ₹1,600 जमा हुए', 3],
+    ['3 mahine ki fees kitni hai', 'जिम की फीस यह है:', 6], ['एक साल का कितना लगता है', 'जिम की फीस यह है।', 4], ['gym ka time kya hai', 'जिम का समय: 6 से 10।', 1], ['fees badha do', 'जिम की फीस Settings में बदलती है।', 1],
     ['personal trainer kis kis ne liya hai', 'पर्सनल ट्रेनर वाले: 1 मेंबर।', 2], ['ladies kitni hain', 'महिला मेंबर: 1 मेंबर।', 2], ['शाम को कौन आता है', 'शाम के बैच में: 1 मेंबर।', 2], ['kitne member hain', 'कुल 4 मेंबर हैं।', 4],
-    ['is mahine kitne naye member aaye', 'इस महीने 4 नए मेंबर जुड़े।', 5], ['sabse zyada fees kiski baaki hai', '2 मेंबर की फीस बाकी है, कुल ₹700।', 3], ['aaj mausam kaisa hai', 'यह मुझे समझ नहीं आया', 7],
+    ['is mahine kitne naye member aaye', 'इस महीने में 4 नए मेंबर जुड़े.', 5], ['sabse zyada fees kiski baaki hai', '2 मेंबर की फीस बाकी है, कुल ₹700।', 3], ['aaj mausam kaisa hai', 'मैं GymSaathi का असिस्टेंट हूँ।', 9],
     ['priya ko reminder bhejo', 'Priya Jain के लिए बाकी फीस का रिमाइंडर तैयार है।', 'fees'], ['मीना को रिमाइंडर भेज दो', 'Meena Das के लिए मेंबरशिप खत्म हो जाने का रिमाइंडर', 'expired'], ['rahul ko reminder bhejo', 'Rahul Sharma की न फीस बाकी है', 1],
     ['sabko reminder bhej do', 'सबको एक साथ भेजना मुझसे नहीं होता।', 'dashboard'], ['priya ko delete kar do', 'Priya Jain (9829044444) को जिम से हटा दूँ?', 'delete'], ['मीना को हटा दो', 'Meena Das (9829066666) को जिम से हटा दूँ?', 'delete'],
-    ['priya ka weight 62 kar do', 'Priya Jain (9829044444) की जानकारी बदलूँ?', 'edit'], ['priya ka number 98290 12345 kar do', 'Priya Jain (9829044444) की जानकारी बदलूँ?', 'edit'], ['priya ka number kya hai', 'Priya Jain की मेंबरशिप', 7],
+    ['priya ka weight 62 kar do', 'Priya Jain (9829044444) की जानकारी बदलूँ?', 'edit'], ['priya ka number 98290 12345 kar do', 'Priya Jain (9829044444) की जानकारी बदलूँ?', 'edit'], ['priya ka number kya hai', 'Priya Jain का मोबाइल नंबर: 9829044444।', 7],
 ['priya ki fees maaf kar do', 'यह Priya Jain के पेज से होता है', 'members/d'],
     ['प्रिया के कितने दिन बचे हैं', 'Priya Jain की मेंबरशिप 31 Oct 2026 तक है', 7], ['priya ko do saal ke liye renew karo', 'Priya Jain (9829044444) की मेंबरशिप 24 महीने के लिए रिन्यू करूँ?', 'renew'],
     // 'they have all paid': everybody's pending fees in one go, the sample member left out
@@ -235,8 +235,8 @@ async function talkChecks() {
     const editing = await told({ do: 'edit', mobile: '9829044444', set: { goal: 'Muscle gain', weight: 62, phone: '12345', months: 12, fee: 0, gymId: 'x' } });
     assert.deepEqual([editing.answer.split('\n'), editing.pending.body], [['Priya Jain (9829044444) की जानकारी बदलूँ?', '- वज़न: 62', '- लक्ष्य: Muscle gain'],
       { name: 'Priya Jain', phone: '9829044444', gender: '', age: '', weight: 62, height: '', goal: 'Muscle gain', health: '', batch: '', notes: '' }]); // a bad number and what is no detail of a member are left out
-    assert.deepEqual([(await told({ do: 'edit', mobile: '9829044444', set: { goal: 'Weight loss' } })).pending, (await told({ do: 'new' })).start, (await told('{"do": pay')).answer.startsWith('माफ़ कीजिए'), (await told({ do: 'burn', mobile: '9829044444' })).pending, (await told({ do: 'delete', mobile: '9829044444' })).pending.do],
-      [undefined, 'register', true, undefined, 'delete']);
+    assert.deepEqual([(await told({ do: 'edit', mobile: '9829044444', set: { goal: 'Weight loss' } })).pending, (await told({ do: 'new' })).start, (await told('{"do": pay')).answer.startsWith('माफ़ कीजिए'), (await told({ do: 'burn', mobile: '9829044444' })).pending, (await told({ do: 'delete', mobile: '9829044444' }, 'priya ko hata do')).pending.do, (await told({ do: 'delete', mobile: '9829044444' })).pending, (await told({ do: 'pay', all: true })).pending],
+      [undefined, 'register', true, undefined, 'delete', undefined, undefined]);
     // The AI may not say that it changed something. When it does, it is asked once more for the order; and when it does so
     // again, the owner is told that nothing was changed. A question may be answered with 'जमा कर दी है', truthfully
     const replies = async (texts, question) => { const left = [...texts]; global.fetch = async () => Response.json({ steps: [{ type: 'model_output', content: [{ type: 'text', text: left.shift() }] }] }); const r = await ai.chat({ question, db: gymDb, today }); return [r.pending ? `${r.pending.body.goal}, ${r.pending.body.height}` : r.answer.split('\n')[0].slice(0, 10), left.length]; };
@@ -416,7 +416,7 @@ async function apiChecks() {
     const follow = await ok(gym('POST', '/api/chat', { question: 'kab khatam hogi?', quick: true, history: soFar }));
     const alone = await ok(gym('POST', '/api/chat', { question: 'kab khatam hogi?', quick: true }));
     const everyone = await ok(gym('POST', '/api/chat', { question: 'kiski fees baaki hai?', quick: true, history: soFar }));
-    assert.deepEqual([follow.answer.includes('Rahul Sharma') && follow.answer.includes('मेंबरशिप:'), alone.answer.includes('Rahul Sharma'), alone.answer.includes('खत्म होने वाली'), everyone.answer.includes('मेंबर की फीस बाकी है'),
+    assert.deepEqual([follow.answer.includes('Rahul Sharma') && follow.answer.includes('मेंबरशिप:'), alone.answer.includes('Rahul Sharma'), alone.answer.startsWith('अगले 7 दिनों में'), everyone.answer.includes('मेंबर की फीस बाकी है'),
       await status(gym('POST', '/api/chat', { question: 'kab khatam hogi?', quick: true, history: 'not a list' }))], [true, false, true, true, 200]);
     assert.equal((await ok(gym('POST', '/api/chat', { question: 'नया मेंबर जोड़ो' }))).start, 'register');
     assert.ok(!(await ok(other('POST', '/api/chat', { question: 'किसकी फीस बाकी है?', quick: true }))).answer.includes('Rahul'));
@@ -812,7 +812,7 @@ async function apiChecks() {
     await ok(owner('POST', '/api/auth/logout'));
     assert.equal(await status(owner('GET', '/api/admin/gyms')), 401);
     // One file per collection, and a write without the JSON content type is refused
-    if (!MONGO) assert.deepEqual(fs.readdirSync(dir).sort(), ['backups.json', 'customers.json', 'exports.json', 'gyms.json', 'memberships.json', 'sessions.json', 'transactions.json']);
+    if (!MONGO) assert.deepEqual(fs.readdirSync(dir).sort(), ['attendance.json', 'backups.json', 'customers.json', 'exports.json', 'gyms.json', 'member_qr_sessions.json', 'memberships.json', 'sessions.json', 'transactions.json']);
     const plain = await fetch(`http://127.0.0.1:${srv.address().port}/api/auth/login`, { method: 'POST', body: '{}' });
     assert.equal(plain.status, 415);
   } finally {

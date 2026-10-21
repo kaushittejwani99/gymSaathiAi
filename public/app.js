@@ -28,7 +28,9 @@ const esc = (v) =>
 const money = (n) => esc(G.money(n));
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const byId = (list, id) => list.find((x) => x.id === id);
-const today = () => G.todayISO();
+// The gym's day is India's day, whatever the clock of this phone or computer is set to: the server counts in it too.
+const dayOf = (d = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+const today = () => dayOf();
 const icon = (name) =>
   `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const opts = (list, selected) =>
@@ -95,7 +97,7 @@ function saveTable(name, rows) {
       type: "text/csv;charset=utf-8",
     }),
   );
-  a.download = `${S.gym.name.replace(/[^\w]+/g, "-")}-${name}-${today()}.csv`;
+  a.download = `${S.gym.name.replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")}-${name}-${today()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
@@ -266,12 +268,12 @@ function route() {
   main.innerHTML = views[name](id, new URLSearchParams(query)) || notFound;
   // In its last five days a gym is told on its dashboard that its time is ending, and what to pay.
   const left = S.validTill
-    ? G.daysBetween(today(), G.todayISO(new Date(S.validTill)))
+    ? G.daysBetween(today(), dayOf(new Date(S.validTill)))
     : 99; // days of the calendar
   if (name === "dashboard" && !view && left <= 5) {
     main.insertAdjacentHTML(
       "afterbegin",
-      `<p class="pay-note">Your ${S.paying ? "plan" : "free trial"} ends ${left <= 0 ? "today" : left === 1 ? "tomorrow" : `in ${left} days`}, on ${esc(G.fmtDate(G.todayISO(new Date(S.validTill))))}.
+      `<p class="pay-note">Your ${S.paying ? "plan" : "free trial"} ends ${left <= 0 ? "today" : left === 1 ? "tomorrow" : `in ${left} days`}, on ${esc(G.fmtDate(dayOf(new Date(S.validTill))))}.
       Pay ${money(S.price)} to keep GymSaathi running. ${esc(S.payNote)}</p>`,
     );
   }
@@ -284,7 +286,7 @@ function route() {
   $("#gymName").textContent = S.gym ? S.gym.name : "All gyms";
   $("#planNote").textContent =
     S.gym && S.validTill
-      ? `${S.paying ? "Plan" : "Free trial"} till ${G.fmtDate(G.todayISO(new Date(S.validTill)))}`
+      ? `${S.paying ? "Plan" : "Free trial"} till ${G.fmtDate(dayOf(new Date(S.validTill)))}`
       : "";
   $("#viewClose").hidden = !view;
   document.title = `${{ bolo: "Assistant", import: "Import old members" }[name] || cap(name)} - GymSaathi`;
@@ -394,7 +396,7 @@ async function dispatch(e) {
   try {
     await actions[el.dataset.action](el, e);
   } catch (err) {
-    console.error(err);
+    if (!err.status) console.error(err); // a refusal from the server is told in the toast, not a crash
     toast(err.message, true);
   } finally {
     delete el.dataset.busy;
@@ -580,7 +582,7 @@ function deletedRows() {
   return table(
     ["Member", "Deleted on", "Gone for good on", ""],
     S.deleted.map((d) => {
-      const on = G.todayISO(new Date(d.deletedAt));
+      const on = dayOf(new Date(d.deletedAt));
       return `<tr>
     <td>${esc(d.name)}<br><span class="muted">${esc(d.phone)}</span></td><td>${esc(G.fmtDate(on))}</td><td>${esc(G.fmtDate(G.addDays(on, 30)))}</td>
     <td class="num"><button class="btn secondary" data-action="member-restore" data-id="${esc(d.id)}">Bring back</button></td></tr>`;
@@ -634,8 +636,8 @@ const memberForm = (m, plan) => `<div class="grid">
   ${field("Name", input("name", m.name, 'required maxlength="80"'))}
   ${field("Mobile number", input("phone", m.phone, 'required type="tel" inputmode="numeric" maxlength="15"'))}
   ${field("Gender", `<select name="gender">${opts([["", "Not said"], "Male", "Female"], m.gender)}</select>`)}
-  ${field("Age", input("age", m.age, NUM))}
-  ${field("Weight (kg)", input("weight", m.weight, 'type="number" step="0.1" min="0" inputmode="decimal"'))}
+  ${field("Age", input("age", m.age, 'type="number" min="5" max="100" step="1" inputmode="numeric"'))}
+  ${field("Weight (kg)", input("weight", m.weight, 'type="number" step="0.1" min="20" max="300" inputmode="decimal"'))}
   ${field("Height", input("height", m.height, 'maxlength="30"'))}
   ${field("Goal", input("goal", m.goal, 'maxlength="100"'))}
   ${field("Health problem, injury", input("health", m.health, 'maxlength="150"'))}
@@ -1119,7 +1121,7 @@ function importRows() {
     seen = rows.map((r) => r.phone),
     sources = imp.sources || [],
     sourceReview = sources.map((src) => src.preview
-      ? `<details open class="card-body" style="border-bottom:1px solid var(--border)"><summary><strong>Original photo:</strong> ${esc(src.name)} — compare names here</summary><a href="${src.preview}" target="_blank" rel="noopener noreferrer" title="Open photo in a new tab to zoom"><img src="${src.preview}" alt="Original uploaded register page" style="display:block;max-width:100%;max-height:460px;object-fit:contain;margin:10px auto;background:#f3f4f6"></a></details>`
+      ? `<details open class="card-body" style="border-bottom:1px solid var(--border)"><summary><strong>Original photo:</strong> ${esc(src.name)} — compare names here</summary><a href="${esc(src.zoom || src.preview)}" target="_blank" rel="noopener noreferrer" title="Open photo in a new tab to zoom"><img src="${src.preview}" alt="Original uploaded register page" style="display:block;max-width:100%;max-height:460px;object-fit:contain;margin:10px auto;background:#f3f4f6"></a></details>`
       : `<p class="card-body hint" style="border-bottom:1px solid var(--border)"><strong>Source file:</strong> ${esc(src.name)}. Open the original PDF and compare every handwritten name before confirming.</p>`
     ).join(""),
     box = (r, name, attrs) =>
@@ -1171,7 +1173,7 @@ views.import = () =>
         >Read the file</button>
       </form>
       <p class="hint">For a photo: lay the page flat, in good light, with the whole page in the picture. The AI reads it and can misread handwriting, so look through every row before you save.
-        ${S.aiEnabled ? "" : '<strong class="low">No AI key is set, so a file cannot be read.</strong>'}</p>
+        ${S.aiEnabled ? "" : '<strong class="low">No AI key is set: an Excel or CSV file with clear headings is still read, but a photo or a PDF cannot be.</strong>'}</p>
     </div>
   </section>
   ${
@@ -1210,6 +1212,7 @@ Object.assign(actions, {
       const source = {
         name: file.name,
         preview: /^image\//i.test(payload.type) ? `data:${payload.type};base64,${payload.data}` : "",
+        zoom: /^image\//i.test(file.type) ? URL.createObjectURL(file) : "", // a browser opens no data: link in a tab
       };
       const sourceRows = r.rows.map((row) => ({
         ...row,
@@ -1642,6 +1645,7 @@ const askChips = () =>
 // ---- the invitation to talk, shown to a gym when it signs in, and otherwise once a day
 
 let helloDue = false; // somebody has just signed in
+let helloOn = ""; // the day it was shown, for a browser that keeps nothing
 function hello() {
   if (!S || !S.gym || view || dlg.open || S.exportDue || current === "bolo")
     return;
@@ -1652,8 +1656,9 @@ function hello() {
   } catch {
     /* a private window keeps nothing: the invitation just shows */
   }
-  if (!helloDue && seen === today()) return;
+  if (!helloDue && (seen === today() || helloOn === today())) return;
   helloDue = false;
+  helloOn = today();
   try {
     localStorage.setItem(key, today());
   } catch {
@@ -2053,7 +2058,7 @@ async function backupFile() {
     };
   }
   return {
-    name: `${S.gym.name.replace(/[^\w]+/g, "-")}-backup-${today()}.json`,
+    name: `${S.gym.name.replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")}-backup-${today()}.json`,
     blob: new Blob([JSON.stringify(await api("GET", "/api/backup"), null, 1)], {
       type: "application/json",
     }),
@@ -2203,9 +2208,14 @@ const gymPrices = (g, must = "") =>
 const PRICE_HINT =
   "Leave 3, 6 or 12 months empty to charge the monthly price times the months.";
 const publicJoinUrl = () => S && S.joinToken ? `${window.location.origin}/join/${S.joinToken}` : "";
+// Drawn here, in the browser: the link is the gym's key to registering members, so it is never sent to a QR website.
 const qrImageUrl = () => {
   const url = publicJoinUrl();
-  return url ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=12&data=${encodeURIComponent(url)}` : "";
+  if (!url || typeof qrcode !== "function") return "";
+  const qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+  return qr.createDataURL(10, 20);
 };
 const memberQrCard = () => {
   const url = publicJoinUrl();
@@ -2215,7 +2225,7 @@ const memberQrCard = () => {
     <div class="card-body qr-layout"><img class="member-qr" src="${esc(image)}" alt="QR code for this gym's member check-in and registration" referrerpolicy="no-referrer" loading="lazy">
       <div class="qr-explain"><p><strong>One QR code for both actions</strong></p><p class="muted">On the first scan on a device, the AI registration assistant opens and asks for details one by one by chat or microphone. If the name and mobile match an existing member, that member is checked in without creating a duplicate; new visitors continue registration and review their details before saving. After success, this browser/device is remembered by a secure cookie and future QR scans automatically check membership and mark attendance. Clearing browser cookies or using another device starts the assistant’s name/mobile verification again. The public page cannot open your dashboard or member list.</p>
         <label class="field">Public QR link<input readonly value="${esc(url)}" id="memberQrUrl"></label>
-        <div class="actions"><button type="button" class="btn secondary" data-action="qr-copy">Copy QR link</button><a class="btn primary" href="${esc(image)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open / print QR image</a></div>
+        <div class="actions"><button type="button" class="btn secondary" data-action="qr-copy">Copy QR link</button><a class="btn primary" href="${esc(image)}" download="gym-qr-code.gif">Download QR image</a></div>
         <p class="hint">Print the QR image and put it near the entrance. Payment is not recorded by public self-registration; staff can collect it in GymSaathi.</p>
       </div>
     </div></section>`;
@@ -2341,7 +2351,7 @@ const daysLeft = (a) =>
 const askGym = (a) => {
   const d = daysLeft(a),
     kind = a.paidMonths ? "प्लान" : "फ्री ट्रायल",
-    on = G.fmtDate(G.todayISO(new Date(a.validTill)));
+    on = G.fmtDate(dayOf(new Date(a.validTill)));
   return G.waLink(
     a.phone,
     `नमस्ते 🙏\n${a.gym} का GymSaathi ${kind} ${on} को ${d > 0 ? "खत्म हो रहा है" : "खत्म हो चुका है"}।\nसेवा चालू रखने के लिए ${G.money(S.price)} जमा करवा दें।\nधन्यवाद।`,
@@ -2352,6 +2362,7 @@ const when = (iso) =>
     ? new Date(iso).toLocaleString("en-IN", {
         dateStyle: "medium",
         timeStyle: "short",
+        timeZone: "Asia/Kolkata",
       })
     : "";
 // Where a gym stands: switched off, never signed in, in its free month, paid up, or out of time.

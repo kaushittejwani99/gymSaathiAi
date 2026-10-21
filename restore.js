@@ -11,6 +11,7 @@ if (fs.existsSync(path.join(__dirname, '.env'))) process.loadEnvFile(path.join(_
 const db = require('./lib/db');
 
 const NAMES = ['gyms', 'customers', 'memberships', 'transactions'];
+const OPTIONAL = ['attendance']; // not in files saved before attendance existed
 const [file, yes] = process.argv.slice(2);
 
 (async () => {
@@ -18,8 +19,8 @@ const [file, yes] = process.argv.slice(2);
   const all = JSON.parse(zlib.gunzipSync(fs.readFileSync(file)));
   if (!NAMES.every((name) => Array.isArray(all[name]))) throw new Error('That is not a GymSaathi backup file.');
   await db.ready;
-  for (const name of [...NAMES, 'sessions']) await db.remove(name, {});
-  for (const name of NAMES) await db.insert(name, all[name]);
+  for (const name of [...NAMES, ...OPTIONAL, 'sessions', 'member_qr_sessions']) await db.remove(name, {});
+  for (const name of [...NAMES, ...OPTIONAL]) await db.insert(name, all[name] || []);
   console.log(`Put back ${all.gyms.length} gyms, ${all.customers.length} members, ${all.memberships.length} memberships and ${all.transactions.length} payments, as they were on ${all.madeAt}.`);
   process.exit(0);
 })().catch((e) => { console.error(e.message); process.exit(1); });

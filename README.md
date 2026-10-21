@@ -174,6 +174,4 @@ Good to know:
 | `restore.js` | putting a downloaded backup back |
 | `lib/whatsapp.js` | sending a template message through Meta's WhatsApp Cloud API |
 | `public/` | the pages |
-| `test.js` | the checks |
-#   g y m S a a t h i  
- 
+| `test.js`, `tests/` | the checks |
