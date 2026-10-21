@@ -2453,12 +2453,13 @@ const add = `<button class="btn secondary" data-action="export-now" title="Downl
         <button class="btn secondary" data-action="account-password" data-id="${esc(a.id)}" data-name="${esc(a.email)}" data-gym="${esc(a.gym)}">Username, password</button>
         <button class="btn secondary" data-action="account-toggle" data-id="${esc(a.id)}" data-off="${a.disabled ? "" : "1"}">${a.disabled ? "Switch on" : "Switch off"}</button>
         <button class="btn secondary" data-action="account-backups" data-id="${esc(a.id)}" data-name="${esc(a.gym)}">Backups</button>
+        <button class="btn secondary" data-action="account-download" data-id="${esc(a.id)}" data-name="${esc(a.gym)}" title="This gym's members, memberships, payments and attendance in one file, as the gym's own Download backup saves it.">Download this gym</button>
         <button class="btn danger" data-action="account-delete" data-id="${esc(a.id)}" data-name="${esc(a.gym)}" data-members="${a.members}">Delete</button></div></td></tr>`,
       ),
     )}</div>
     <p class="hint">A gym's free month starts at its first sign-in. When its time is over it is signed out and told to pay; press <strong>Paid</strong> when it has, and it can sign in again.
       <strong>Open</strong> shows a gym's members, fees and payments as the gym sees them. <strong>Edit details</strong> opens its name, owner, address, amenities and prices.
-      Every gym is backed up once a day and the last ${S.backupDays} days are kept: <strong>Backups</strong> puts a gym back to one of them. <strong>Download backup</strong> saves everything in one file; keep a copy outside this site.</p>
+      Every gym is backed up once a day and the last ${S.backupDays} days are kept: <strong>Backups</strong> puts a gym back to one of them. <strong>Download backup</strong> saves every gym in one file, <strong>Download this gym</strong> one gym alone; keep a copy outside this site.</p>
     ${view ? "" : backupCard()}
     ${
       gone.length
@@ -2551,6 +2552,16 @@ Object.assign(actions, {
     await api("POST", `/api/admin/gyms/${el.dataset.id}/restore`);
     toast("The gym is back");
     await loadAccounts();
+  },
+  // One gym's own backup, the same file the gym saves from its Settings.
+  async "account-download"(el) {
+    const blob = new Blob([JSON.stringify(await api("GET", `/api/backup?gym=${el.dataset.id}`), null, 1)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${fileName(el.dataset.name)}-backup-${today()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast(`${el.dataset.name}: backup downloaded`);
   },
   async "account-backups"(el) {
     const kept = await api("GET", `/api/admin/gyms/${el.dataset.id}/backups`);
